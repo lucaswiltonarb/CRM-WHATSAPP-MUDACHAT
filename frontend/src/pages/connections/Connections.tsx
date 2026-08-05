@@ -151,7 +151,7 @@ export default function Connections() {
   return (
     <div className="page-shell">
       <PageHeader title="Conexões / Canais" subtitle="WhatsApp, Instagram, Facebook e mais"
-        actions={<button className="btn btn-primary" onClick={() => { setForm({ type: 'whatsapp_official', name: '', credentials: {} }); setOpen(true); }}><i className="ti ti-plus" /> Nova Conexão</button>} />
+        actions={<button data-testid="new-connection-btn" className="btn btn-primary" onClick={() => { setForm({ type: 'whatsapp_official', name: '', credentials: {} }); setOpen(true); }}><i className="ti ti-plus" /> Nova Conexão</button>} />
 
       {items.length === 0 ? <div className="card"><EmptyState icon="ti ti-plug" title="Nenhuma conexão" description="Conecte um canal de atendimento." /></div> : (
         <div className="card-grid">
@@ -177,8 +177,8 @@ export default function Connections() {
 
       <Modal open={open} onClose={() => setOpen(false)} title={form.id ? 'Configurar Conexão' : 'Nova Conexão'} size="lg"
         footer={<><button className="btn btn-light-secondary" onClick={() => setOpen(false)}>Cancelar</button><button className="btn btn-primary" onClick={form.id ? async () => { const u = await api.channels.update(form.id, form); setItems(p => p.map(c => c.id === form.id ? u : c)); setOpen(false); notify('Salvo'); } : create}>Salvar</button></>}>
-        <div className="form-group"><label>Tipo de Canal</label><select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{Object.entries(TYPE_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></div>
-        <div className="form-group"><label>Nome interno <span className="req">*</span></label><input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Atendimento Principal" /></div>
+        <div className="form-group"><label>Tipo de Canal</label><select data-testid="channel-type-select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{Object.entries(TYPE_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></div>
+        <div className="form-group"><label>Nome interno <span className="req">*</span></label><input data-testid="channel-name-input" value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Atendimento Principal" /></div>
 
         {form.type === 'whatsapp_official' && <div className="cred-box"><h4>Credenciais WhatsApp API Oficial (Meta Cloud)</h4>
           <p className="text-sm text-muted" style={{marginBottom:'1rem'}}>Configure sua conta no <a href="https://business.facebook.com" target="_blank" rel="noreferrer">Meta Business</a> → WhatsApp → Configuração da API.</p>
