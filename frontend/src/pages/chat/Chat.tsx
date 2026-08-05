@@ -36,7 +36,7 @@ type ContactExt = Contact & { customFields?: Record<string, unknown> & { interna
 type ConversationExt = Conversation & { startedAt?: string };
 type StoreProductLite = { id: string; name: string; category?: string; price: number; active?: boolean };
 type StoreCouponLite = { id: string; code: string; type: 'percent' | 'fixed'; value: number; active: boolean };
-type ChannelLite = { id: string; credentials?: { instanceName?: string } };
+type ChannelLite = { id: string; type?: string; credentials?: { instanceName?: string; phoneNumberId?: string; accessToken?: string; catalogId?: string } };
 
 const filterLabel: Record<ChatFilter, string> = {
   all: 'Todas',
@@ -245,18 +245,38 @@ export default function Chat() {
     if (!sel) return '';
     const channels = (JSON.parse(localStorage.getItem('db_channels') || '[]') as ChannelLite[]);
     const ch = channels.find((c) => c.id === sel.channelId);
+    // For Meta Cloud API channels, return the phoneNumberId as identifier
+    if (ch?.type === 'whatsapp_official' && ch?.credentials?.phoneNumberId) return ch.credentials.phoneNumberId;
     return ch?.credentials?.instanceName || '';
+  };
+
+  const getActiveChannel = (): ChannelLite | undefined => {
+    if (!sel) return undefined;
+    const channels = (JSON.parse(localStorage.getItem('db_channels') || '[]') as ChannelLite[]);
+    return channels.find((c) => c.id === sel.channelId);
   };
 
   const sendCatalog = async () => {
     if (!sel) return;
+    const activeChannel = getActiveChannel();
     const instanceName = getActiveInstanceName();
     if (!instanceName) {
-      notify('Canal sem instância Evolution vinculada', 'warning');
+      notify('Canal sem instância vinculada', 'warning');
       return;
     }
     const number = (sel.contact.phone || '').replace(/\D/g, '');
     const activeProducts = products.filter((p) => p.active).slice(0, 20);
+
+    // Meta Cloud API - send catalog text message
+    if (activeChannel?.type === 'whatsapp_official' && activeChannel?.credentials?.accessToken) {
+      try {
+        const { sendText } = await import('../../services/meta-cloud');
+        const lines = ['🛍️ *Catálogo de Produtos*', ...activeProducts.map((p, i) => `${i+1}. ${p.name} - R$ ${Number(p.price||0).toLocaleString('pt-BR')}`), '', 'Responda com o número do item para comprar.'];
+        const sent = await sendText(activeChannel.credentials as any, number, lines.join('\n'));
+        if (sent) { notify('Catálogo enviado via WhatsApp Oficial'); return; }
+      } catch { /* fallback */ }
+    }
+
     const res = await sendCatalogViaBackend({ instanceName, number, products: activeProducts });
     if (!res?.ok) {
       notify(res?.error || 'Falha ao enviar catálogo', 'error');
@@ -267,15 +287,36 @@ export default function Chat() {
 
   const sendProductPayment = async (p: StoreProductLite, method: 'PIX' | 'CARD', coupon?: StoreCouponLite | null) => {
     if (!sel) return;
+    const activeChannel = getActiveChannel();
     const instanceName = getActiveInstanceName();
     if (!instanceName) {
-      notify('Canal sem instância Evolution vinculada', 'warning');
+      notify('Canal sem instância vinculada. Configure as credenciais em Conexões.', 'warning');
       return;
     }
     const number = (sel.contact.phone || '').replace(/\D/g, '');
     const basePrice = Number(p.price || 0);
     const discountAmount = coupon ? Math.min(basePrice, coupon.type === 'percent' ? Number((basePrice * (coupon.value / 100)).toFixed(2)) : Number(coupon.value || 0)) : 0;
     const finalAmount = Math.max(0, Number((basePrice - discountAmount).toFixed(2)));
+
+    // Meta Cloud API - send PIX payment natively via WhatsApp
+    if (activeChannel?.type === 'whatsapp_official' && activeChannel?.credentials?.phoneNumberId && activeChannel?.credentials?.accessToken) {
+      try {
+        const { sendPixPayment } = await import('../../services/meta-cloud');
+        const sent = await sendPixPayment(activeChannel.credentials as any, number, {
+          productName: p.name,
+          amount: finalAmount,
+          pixCopyPaste: '', // Will be filled if Asaas is configured
+          invoiceUrl: '',
+        });
+        if (sent) {
+          notify(`Cobrança PIX enviada via WhatsApp Oficial para ${p.name}`);
+          setProductsOpen(false); setProductCouponOpen(false); setSelectedProduct(null); setSelectedCouponId('');
+          return;
+        }
+      } catch { /* fallback to backend */ }
+    }
+
+    // Fallback: use backend (Asaas + Evolution/Meta)
     const r = await createPaymentViaBackend({
       instanceName,
       number,

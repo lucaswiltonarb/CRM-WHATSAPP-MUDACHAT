@@ -359,6 +359,52 @@ async def handle_incoming(instance_name: str, number: str, text: str, name: str)
         except Exception as e:
             logger.warning(f"[engine] erro {e}")
 
+# ---------- Meta Cloud API helpers ----------
+GRAPH_URL = "https://graph.facebook.com/v21.0"
+
+def find_meta_instance(phone_number_id: str) -> Optional[dict]:
+    """Find a Meta Cloud API instance by phoneNumberId."""
+    return next((i for i in db["instances"] if i.get("phoneNumberId") == phone_number_id), None)
+
+async def meta_send_text(phone_number_id: str, access_token: str, to: str, text: str) -> bool:
+    import httpx
+    number = re.sub(r"\D", "", str(to))
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            res = await client.post(
+                f"{GRAPH_URL}/{phone_number_id}/messages",
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {access_token}"},
+                json={"messaging_product": "whatsapp", "to": number, "type": "text", "text": {"body": text}},
+            )
+            if not res.is_success:
+                logger.warning(f"[meta-send] HTTP {res.status_code}: {res.text[:200]}")
+            return res.is_success
+    except Exception as e:
+        logger.warning(f"[meta-send] error {e}")
+        return False
+
+async def meta_send_interactive_cta(phone_number_id: str, access_token: str, to: str, body_text: str, button_text: str, url: str) -> bool:
+    import httpx
+    number = re.sub(r"\D", "", str(to))
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            res = await client.post(
+                f"{GRAPH_URL}/{phone_number_id}/messages",
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {access_token}"},
+                json={
+                    "messaging_product": "whatsapp", "to": number, "type": "interactive",
+                    "interactive": {
+                        "type": "cta_url",
+                        "body": {"text": body_text},
+                        "action": {"name": "cta_url", "parameters": {"display_text": button_text, "url": url}},
+                    },
+                },
+            )
+            return res.is_success
+    except Exception as e:
+        logger.warning(f"[meta-cta] error {e}")
+        return False
+
 # ---------- uid helper ----------
 def uid():
     return f"id-{int(time.time()*1000)}-{os.urandom(4).hex()}"
@@ -783,6 +829,108 @@ async def webhook_instance(instance: str, request: Request):
 @app.post("/api/webhook/{instance}/{event_name}")
 async def webhook_instance_event(instance: str, event_name: str, request: Request):
     return await process_webhook(request, instance=instance, event_name=event_name)
+
+@app.post("/api/meta/send-text")
+async def meta_send_text_endpoint(request: Request):
+    """Send a text message via Meta Cloud API."""
+    body = await request.json()
+    phone_number_id = body.get("phoneNumberId")
+    access_token = body.get("accessToken")
+    to = body.get("to")
+    text = body.get("text")
+    if not phone_number_id or not access_token or not to or not text:
+        return {"ok": False, "error": "Parâmetros obrigatórios: phoneNumberId, accessToken, to, text"}
+    ok = await meta_send_text(phone_number_id, access_token, to, text)
+    return {"ok": ok}
+
+@app.post("/api/meta/send-pix")
+async def meta_send_pix_endpoint(request: Request):
+    """Send a PIX payment message via Meta Cloud API."""
+    body = await request.json()
+    phone_number_id = body.get("phoneNumberId")
+    access_token = body.get("accessToken")
+    to = body.get("to")
+    product_name = body.get("productName", "Produto")
+    amount = float(body.get("amount", 0))
+    pix_copy_paste = body.get("pixCopyPaste", "")
+    invoice_url = body.get("invoiceUrl", "")
+
+    if not phone_number_id or not access_token or not to or amount <= 0:
+        return {"ok": False, "error": "Parâmetros inválidos"}
+
+    price_str = f"{amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    lines = [
+        "✅ *Cobrança PIX*", "",
+        f"Produto: *{product_name}*",
+        f"Valor: *R$ {price_str}*", "",
+    ]
+    if pix_copy_paste:
+        lines += ["🔑 *Código PIX (copie e cole):*", pix_copy_paste, ""]
+    if invoice_url:
+        lines.append(f"🔗 Pagar online: {invoice_url}")
+    lines += ["", "Após o pagamento, envie o comprovante aqui para confirmação ✅"]
+    text = "\n".join(lines)
+
+    if invoice_url:
+        ok = await meta_send_interactive_cta(phone_number_id, access_token, to, text, "💳 Pagar agora", invoice_url)
+    else:
+        ok = await meta_send_text(phone_number_id, access_token, to, text)
+
+    log_event({"instance": f"meta-{phone_number_id}", "number": to, "direction": "out", "text": text, "name": ""})
+    return {"ok": ok}
+
+@app.get("/api/meta/webhook")
+async def meta_webhook_verify(request: Request):
+    """Meta webhook verification (GET)."""
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token")
+    challenge = request.query_params.get("hub.challenge")
+    # Accept any verify token for now; in production, match against stored token
+    if mode == "subscribe" and challenge:
+        return Response(content=challenge, media_type="text/plain")
+    return Response(content="Forbidden", status_code=403)
+
+@app.post("/api/meta/webhook")
+async def meta_webhook_receive(request: Request):
+    """Receive incoming messages from Meta Cloud API webhook."""
+    payload = await request.json()
+    entries = payload.get("entry", [])
+    for entry in entries:
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+            messages = value.get("messages", [])
+            metadata = value.get("metadata", {})
+            phone_number_id = metadata.get("phone_number_id", "")
+            contacts = value.get("contacts", [])
+
+            for msg in messages:
+                if msg.get("type") != "text":
+                    continue
+                from_number = msg.get("from", "")
+                text = msg.get("text", {}).get("body", "")
+                contact_name = ""
+                if contacts:
+                    profile = contacts[0].get("profile", {})
+                    contact_name = profile.get("name", "")
+
+                log_event({
+                    "instance": f"meta-{phone_number_id}",
+                    "number": from_number,
+                    "name": contact_name,
+                    "direction": "in",
+                    "text": text,
+                })
+
+                # Try to run automations for this Meta channel
+                inst = find_meta_instance(phone_number_id)
+                if inst:
+                    ctx = {"number": from_number, "text": text, "name": contact_name,
+                           "channelId": inst.get("channelId"), "instance": f"meta-{phone_number_id}"}
+                    active = [a for a in db["automations"]
+                              if a.get("isActive") and (not a.get("channelId") or a.get("channelId") == inst.get("channelId"))]
+                    for a in active:
+                        asyncio.create_task(run_flow(a, inst, ctx))
+    return {"ok": True}
 
 # Also support without /api prefix for Evolution compatibility
 @app.post("/webhook")

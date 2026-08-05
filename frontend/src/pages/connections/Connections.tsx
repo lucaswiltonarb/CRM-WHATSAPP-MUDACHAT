@@ -7,6 +7,7 @@ import * as evo from '../../services/evolution';
 import { syncToBackend } from '../../services/backend';
 
 const TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
+  whatsapp_official: { label: 'WhatsApp API Oficial (Meta)', icon: 'ti ti-brand-whatsapp', color: '#075e54' },
   whatsapp_evolution: { label: 'WhatsApp (Evolution API)', icon: 'ti ti-brand-whatsapp', color: '#25d366' },
   whatsapp_twilio: { label: 'WhatsApp (Twilio)', icon: 'ti ti-brand-whatsapp', color: '#f22f46' },
   instagram: { label: 'Instagram', icon: 'ti ti-brand-instagram', color: '#e1306c' },
@@ -51,6 +52,35 @@ export default function Connections() {
   const startConnect = async (c: Channel) => {
     const creds = evoCreds(c);
     setQrModal(c); setQrImg(''); setQrPairing(''); setQrError(''); setQrData(''); setQrStatus('Iniciando...');
+
+    // Meta Cloud API (Official) — no QR, just validate token
+    if ((c.type as string) === 'whatsapp_official') {
+      const cr: any = c.credentials || {};
+      if (!cr.phoneNumberId || !cr.accessToken) {
+        setQrError('Preencha o Phone Number ID e Access Token nas configurações do canal.');
+        setQrStatus('');
+        return;
+      }
+      setQrStatus('Validando credenciais Meta...');
+      try {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${cr.phoneNumberId}?access_token=${cr.accessToken}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const u = await api.channels.update(c.id, { status: 'connected', lastSync: new Date().toISOString() });
+        setItems(p => p.map(x => x.id === c.id ? u : x));
+        notify(`WhatsApp Oficial conectado! Número: ${data.display_phone_number || data.verified_name || cr.phoneNumberId}`);
+        api.audit.log('Canal Meta Cloud conectado', 'Conexões', 'Channel', c.id);
+        const sync = await syncToBackend();
+        if (sync.ok) notify('Sincronizado com backend', 'success');
+        closeQr();
+      } catch (e: any) {
+        setQrError(e?.message || 'Falha ao validar credenciais Meta. Verifique Phone Number ID e Access Token.');
+        setQrStatus('');
+        await api.channels.update(c.id, { status: 'error' });
+        setItems(p => p.map(x => x.id === c.id ? { ...x, status: 'error' } : x));
+      }
+      return;
+    }
 
     // Real Evolution API flow when credentials are provided.
     if ((c.type as string) === 'whatsapp_evolution' && evo.hasCreds(creds)) {
@@ -121,7 +151,7 @@ export default function Connections() {
   return (
     <div className="page-shell">
       <PageHeader title="Conexões / Canais" subtitle="WhatsApp, Instagram, Facebook e mais"
-        actions={<button className="btn btn-primary" onClick={() => { setForm({ type: 'whatsapp_evolution', name: '', credentials: {} }); setOpen(true); }}><i className="ti ti-plus" /> Nova Conexão</button>} />
+        actions={<button className="btn btn-primary" onClick={() => { setForm({ type: 'whatsapp_official', name: '', credentials: {} }); setOpen(true); }}><i className="ti ti-plus" /> Nova Conexão</button>} />
 
       {items.length === 0 ? <div className="card"><EmptyState icon="ti ti-plug" title="Nenhuma conexão" description="Conecte um canal de atendimento." /></div> : (
         <div className="card-grid">
@@ -149,6 +179,19 @@ export default function Connections() {
         footer={<><button className="btn btn-light-secondary" onClick={() => setOpen(false)}>Cancelar</button><button className="btn btn-primary" onClick={form.id ? async () => { const u = await api.channels.update(form.id, form); setItems(p => p.map(c => c.id === form.id ? u : c)); setOpen(false); notify('Salvo'); } : create}>Salvar</button></>}>
         <div className="form-group"><label>Tipo de Canal</label><select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{Object.entries(TYPE_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></div>
         <div className="form-group"><label>Nome interno <span className="req">*</span></label><input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Atendimento Principal" /></div>
+
+        {form.type === 'whatsapp_official' && <div className="cred-box"><h4>Credenciais WhatsApp API Oficial (Meta Cloud)</h4>
+          <p className="text-sm text-muted" style={{marginBottom:'1rem'}}>Configure sua conta no <a href="https://business.facebook.com" target="_blank" rel="noreferrer">Meta Business</a> → WhatsApp → Configuração da API.</p>
+          <div className="form-group"><label>Phone Number ID <span className="req">*</span></label><input value={form.credentials?.phoneNumberId || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, phoneNumberId: e.target.value } })} placeholder="Ex: 123456789012345" /></div>
+          <div className="form-group"><label>Access Token (permanente) <span className="req">*</span></label><input type="password" value={form.credentials?.accessToken || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, accessToken: e.target.value } })} placeholder="EAAxxxxxxx..." /></div>
+          <div className="form-group"><label>WABA ID (WhatsApp Business Account)</label><input value={form.credentials?.wabaId || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, wabaId: e.target.value } })} placeholder="Ex: 987654321098765" /></div>
+          <div className="form-group"><label>Verify Token (para webhook)</label><input value={form.credentials?.verifyToken || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, verifyToken: e.target.value } })} placeholder="Token personalizado para validação" /></div>
+          <div className="form-group"><label>Catalog ID (para pagamentos nativos)</label><input value={form.credentials?.catalogId || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, catalogId: e.target.value } })} placeholder="ID do catálogo no Commerce Manager" /></div>
+          <div style={{background:'rgba(33,114,219,.08)',borderRadius:10,padding:'.8rem 1rem',fontSize:'.82rem',color:'#1e40af',marginTop:'.5rem'}}>
+            <i className="ti ti-info-circle" style={{marginRight:'.4rem'}} />
+            <strong>PIX nativo:</strong> Para cobranças PIX direto no WhatsApp, configure um provedor de pagamento (ex: Cielo) no Commerce Manager da Meta e informe o Catalog ID acima.
+          </div>
+        </div>}
 
         {form.type === 'whatsapp_evolution' && <div className="cred-box"><h4>Credenciais Evolution API</h4>
           <div className="form-group"><label>URL do servidor</label><input value={form.credentials?.serverUrl || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, serverUrl: e.target.value } })} placeholder="https://evolution.seudominio.com" /></div>

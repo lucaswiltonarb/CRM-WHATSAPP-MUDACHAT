@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only smoke test of Meta Cloud API channel addition. Verified login → Connections page → Nova Conexão modal with WhatsApp API Oficial (Meta) as first/default channel type, all Meta credential fields (Phone Number ID, Access Token, WABA ID, Verify Token, Catalog ID) plus PIX info box render correctly; switching to Evolution reveals its own fields and hides Meta fields; Chat page loads without errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Nova Conexão modal", "issues": ["No data-testid attributes on channel type select, credential inputs, or Nova Conexão button — makes automated testing brittle (tests currently rely on text/CSS selectors)."]},
+      {"screen": "Connections modal QR", "issues": ["Title uses garbled dash character in `Conectar â€” ${qrModal.name}` (mojibake, should be em-dash)."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Add data-testid attributes to Connections page interactive elements (Nova Conexão button, tipo select, phoneNumberId/accessToken/wabaId/verifyToken/catalogId inputs, Cancelar/Salvar buttons).",
+    "Fix mojibake in QR modal title (Conectar â€” ...) — replace with proper em-dash."
+  ],
+  "critical_code_review_comments": [
+    "Connections.tsx keeps demo-mode timeouts in pollRef but clears with clearInterval; use appropriate cleanup for setTimeout too (currently pollRef.current = setTimeout as any, cleared via clearInterval).",
+    "Access Token is rendered with type=password (good) but stored in localStorage in plain text via channels list — flag for security review."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Core Meta Cloud API integration in the Connections modal is working end-to-end at the UI level. Default channel type is whatsapp_official; Meta credential form + PIX info box render; switching to whatsapp_evolution swaps to Evolution creds. Chat page loads without runtime errors. Backend endpoints /api/meta/* were NOT tested (frontend-only scope).",
+  "rca_of_the_issue": "N/A — no functional defects found."
+}
