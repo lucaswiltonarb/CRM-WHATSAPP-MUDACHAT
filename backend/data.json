@@ -1,0 +1,21 @@
+{
+  "instances": [],
+  "automations": [],
+  "integrations": {},
+  "orders": [],
+  "products": [],
+  "coupons": [],
+  "storeSettings": {
+    "brandName": "",
+    "accentColor": "#ec4899",
+    "seoTitle": "",
+    "seoDescription": "",
+    "address": "",
+    "whatsapp": "",
+    "enablePickup": true,
+    "enableDelivery": true
+  },
+  "funnels": [],
+  "classifications": [],
+  "leads": []
+}
