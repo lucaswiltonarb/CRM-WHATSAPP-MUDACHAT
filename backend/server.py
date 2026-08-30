@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 PUBLIC_URL = os.environ.get("PUBLIC_URL", "https://discount-aloof-familiar.ngrok-free.dev").rstrip("/")
-DATA_FILE = Path(__file__).parent / "data.json"
+DATA_FILE = Path(os.environ.get("DATA_FILE") or (Path(__file__).parent / "data.json"))
 
 # ---------- persistence ----------
 def _default_db():
