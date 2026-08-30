@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(file /app/frontend/src/assets/agent*.png)"
+    ]
+  }
+}

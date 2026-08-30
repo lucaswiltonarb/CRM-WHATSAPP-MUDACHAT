@@ -416,6 +416,10 @@ export interface AIAgent {
   description?: string;
   behavior?: string;
   tone?: string;
+  /** id de AGENT_AVATARS (assets/agentAvatars) */
+  avatar?: string;
+  /** area de atuacao da empresa, usada como "cargo" no card do agente */
+  area?: string;
   rules?: string;
   instructions?: string;
   transferRules?: string;

@@ -18,6 +18,35 @@ const fmtR = (n: number) => `R$ ${Number(n || 0).toLocaleString('pt-BR')}`;
 const fmtT = (s: number) => `${Math.floor((s || 0) / 60)}m ${(s || 0) % 60}s`;
 const heatMapMax = (items: Array<{ count: number }>) => Math.max(0, ...items.map((item) => item.count || 0));
 
+type HeatRange = { from: number; to: number; color: string; name: string };
+
+/* Rampa sequencial derivada do azul do template (#2172DB / #4f8dfd).
+   Somente HEX: o ApexCharts quebra ao receber rgba() no colorScale. */
+const HEAT_RAMP = {
+  light: { empty: '#eef2f7', levels: ['#dbe9fe', '#aecdfa', '#74a6f4', '#3b82f6', '#1d4ed8'] },
+  dark: { empty: '#1b2740', levels: ['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'] },
+};
+
+const buildHeatRanges = (max: number, dark: boolean): HeatRange[] => {
+  const ramp = dark ? HEAT_RAMP.dark : HEAT_RAMP.light;
+  const ranges: HeatRange[] = [{ from: 0, to: 0, color: ramp.empty, name: 'Sem volume' }];
+  if (max < 1) return ranges;
+
+  const steps = Math.min(ramp.levels.length, max);
+  const size = max / steps;
+  let from = 1;
+  for (let i = 0; i < steps && from <= max; i += 1) {
+    const to = i === steps - 1 ? max : Math.max(from, Math.round((i + 1) * size));
+    const colorIdx = steps === 1 ? ramp.levels.length - 1 : Math.round((i * (ramp.levels.length - 1)) / (steps - 1));
+    ranges.push({ from, to, color: ramp.levels[colorIdx], name: from === to ? `${from}` : `${from}-${to}` });
+    from = to + 1;
+  }
+  return ranges;
+};
+
+const heatColorFor = (value: number, ranges: HeatRange[]) =>
+  ranges.find((r) => value >= r.from && value <= r.to)?.color || ranges[0].color;
+
 function Stat({ icon, color, value, label }: { icon: string; color: string; value: string | number; label: string }) {
   return (
     <div className="stat-card">
@@ -258,46 +287,59 @@ export default function Dashboard() {
     fill: { opacity: 0.95 },
   } as ApexOptions);
 
+  const heatRanges = useMemo(() => buildHeatRanges(heatMax, darkMode), [heatMax, darkMode]);
+
   const heatmapOptions = useMemo(() => ({
     ...baseOptions,
     chart: { ...baseOptions.chart, type: 'heatmap' },
     colors: [chartTheme.blue],
-    stroke: { width: 3, colors: [darkMode ? 'rgba(15,23,42,.28)' : 'rgba(255,255,255,.92)'] },
+    // O stroke desenha a "calha" entre as celulas: usa a cor do painel para virar respiro.
+    stroke: { show: true, width: 4, colors: [darkMode ? '#101a2d' : '#ffffff'] },
+    grid: { ...baseOptions.grid, show: false, padding: { left: 4, right: 8, top: 0, bottom: 0 } },
     xaxis: {
+      type: 'category',
       axisBorder: { show: false },
       axisTicks: { show: false },
-      labels: axisLabelStyle,
+      tooltip: { enabled: false },
+      labels: {
+        ...axisLabelStyle,
+        rotate: 0,
+        hideOverlappingLabels: true,
+        style: { ...axisLabelStyle.style, fontSize: '11px' },
+        formatter: (value: string) => (Number(String(value).replace('h', '')) % 2 === 0 ? value : ''),
+      },
     },
-    yaxis: { labels: axisLabelStyle },
+    yaxis: { labels: { ...axisLabelStyle, style: { ...axisLabelStyle.style, fontWeight: 600 } } },
     legend: { show: false },
+    states: {
+      hover: { filter: { type: darkMode ? 'lighten' : 'darken', value: 0.12 } },
+      active: { allowMultipleDataPointsSelection: false, filter: { type: 'none' } },
+    },
     tooltip: {
       ...baseOptions.tooltip,
       custom: ({ series, seriesIndex, dataPointIndex, w }) => {
         const heatSeriesConfig = w.config.series as Array<{ name?: string; data?: Array<{ x?: string; y?: number }> }>;
         const day = heatSeriesConfig?.[seriesIndex]?.name || '';
         const hour = heatSeriesConfig?.[seriesIndex]?.data?.[dataPointIndex]?.x || '';
-        const value = series?.[seriesIndex]?.[dataPointIndex] ?? 0;
-        return `<div class="heatmap-tooltip"><span class="heatmap-tooltip-day">${day}</span><strong>${hour}</strong><span class="heatmap-tooltip-value">${value} atendimento(s)</span></div>`;
+        const value = Number(series?.[seriesIndex]?.[dataPointIndex] ?? 0);
+        const dot = heatColorFor(value, heatRanges);
+        return `<div class="heatmap-tooltip">
+            <span class="heatmap-tooltip-day">${day} &middot; ${hour}</span>
+            <span class="heatmap-tooltip-value"><i style="background:${dot}"></i>${value} atendimento(s)</span>
+          </div>`;
       },
     },
     plotOptions: {
       heatmap: {
-        enableShades: true,
-        shadeIntensity: 0.92,
-        radius: 18,
+        // enableShades quebra a escala discreta (e escurece tudo); as faixas ja definem a cor.
+        enableShades: false,
+        radius: 4,
         distributed: false,
-        colorScale: {
-          ranges: [
-            { from: 0, to: 0, color: darkMode ? 'rgba(71,85,105,.18)' : 'rgba(226,232,240,.8)', name: 'Sem volume' },
-            { from: 1, to: Math.max(1, Math.ceil(heatMax * 0.25)), color: darkMode ? '#1d4ed8' : '#bfdbfe', name: 'Baixo' },
-            { from: Math.max(2, Math.ceil(heatMax * 0.25) + 1), to: Math.max(3, Math.ceil(heatMax * 0.55)), color: darkMode ? '#2563eb' : '#60a5fa', name: 'Médio' },
-            { from: Math.max(4, Math.ceil(heatMax * 0.55) + 1), to: Math.max(5, Math.ceil(heatMax * 0.8)), color: darkMode ? '#38bdf8' : '#2563eb', name: 'Alto' },
-            { from: Math.max(6, Math.ceil(heatMax * 0.8) + 1), to: Math.max(6, heatMax || 6), color: darkMode ? '#22d3ee' : '#0f766e', name: 'Pico' },
-          ],
-        },
+        useFillColorAsStroke: false,
+        colorScale: { ranges: heatRanges },
       },
     },
-  } as ApexOptions), [axisLabelStyle, baseOptions, chartTheme.blue, darkMode, heatMax]);
+  } as ApexOptions), [axisLabelStyle, baseOptions, chartTheme.blue, darkMode, heatRanges]);
 
   if (!data) return <LoadingState label="Carregando dashboard..." />;
 
@@ -423,6 +465,13 @@ export default function Dashboard() {
             <div className="card card-pad chart-panel">
               <h4 className="chart-title">Mapa de calor (dia x hora)</h4>
               <Chart type="heatmap" height={320} options={heatmapOptions} series={heatSeries} />
+              <div className="heatmap-legend">
+                <span>Menos</span>
+                {heatRanges.map((r) => (
+                  <i key={`${r.from}-${r.to}`} style={{ background: r.color }} title={`${r.name} atendimento(s)`} />
+                ))}
+                <span>Mais</span>
+              </div>
             </div>
             <div className="card card-pad chart-panel">
               <h4 className="chart-title">Volume por conexão</h4>

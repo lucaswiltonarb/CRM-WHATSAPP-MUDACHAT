@@ -3,7 +3,19 @@
   "automations": [],
   "integrations": {},
   "orders": [],
-  "products": [],
+  "products": [
+    {
+      "id": "p-1787972282969",
+      "name": "Whey Protein",
+      "sku": "123456",
+      "category": "Suplementos",
+      "price": 156.0,
+      "stock": 20,
+      "active": true,
+      "createdAt": "2026-08-29T02:57:58.010589+00:00",
+      "updatedAt": "2026-08-29T02:57:58.010598+00:00"
+    }
+  ],
   "coupons": [],
   "storeSettings": {
     "brandName": "",

@@ -120,7 +120,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: { coll
           </div>
           {!collapsed && (
             <div className="brand-text">
-              <span className="brand-name">NexAtende</span>
+              <span className="brand-name">FlowChat CRM</span>
               <span className="brand-sub">{company?.tradeName || 'SaaS'}</span>
             </div>
           )}

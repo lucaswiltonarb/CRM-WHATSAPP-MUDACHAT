@@ -2,7 +2,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { AIAgent } from '../../types';
-import { LoadingState, PageHeader } from '../../components/common';
+import { ConfirmDialog, LoadingState, PageHeader } from '../../components/common';
 import { useToast } from '../../contexts/ToastContext';
 
 const TABS = ['Perfil', 'Treinamento', 'Integrações', 'Follow-up', 'Avançado', 'Simulador'];
@@ -17,11 +17,19 @@ export default function AIAgentConfig() {
   const [form, setForm] = useState<any>({});
   const [chat, setChat] = useState<{ role: string; text: string }[]>([]);
   const [input, setInput] = useState('');
+  const [confirmDel, setConfirmDel] = useState(false);
 
   useEffect(() => { api.aiAgents.getById(id!).then((a) => { if (!a) { nav('/ai-agents'); return; } setAgent(a); setForm(a); setLoading(false); }); }, [id]);
 
   const save = async () => { const u = await api.aiAgents.update(id!, form); setAgent(u); await api.audit.log('Agente IA editado', 'Agentes IA', 'AIAgent', id!); notify('Configurações salvas'); };
   const set = (k: string, v: any) => setForm({ ...form, [k]: v });
+
+  const remove = async () => {
+    await api.aiAgents.remove(id!);
+    await api.audit.log('Agente IA removido', 'Agentes IA', 'AIAgent', id!);
+    notify('Agente removido');
+    nav('/ai-agents');
+  };
 
   const send = () => {
     if (!input.trim()) return;
@@ -34,7 +42,7 @@ export default function AIAgentConfig() {
   return (
     <div className="page-shell">
       <PageHeader title={agent!.name} subtitle="Configuração do agente de IA"
-        actions={<><button className="btn btn-light-secondary" onClick={() => nav('/ai-agents')}>Voltar</button><button className="btn btn-primary" onClick={save}>Salvar</button></>} />
+        actions={<><button className="btn btn-light-secondary" onClick={() => nav('/ai-agents')}>Voltar</button><button className="btn btn-light-danger" onClick={() => setConfirmDel(true)}><i className="ti ti-trash" /> Remover</button><button className="btn btn-primary" onClick={save}>Salvar</button></>} />
 
       <div className="tab-nav">{TABS.map((t, i) => <button key={t} className={`tab-btn ${tab === i ? 'active' : ''}`} onClick={() => setTab(i)}>{t}</button>)}</div>
 
@@ -60,12 +68,22 @@ export default function AIAgentConfig() {
           <div className="form-group"><label>Limite de mensagens por dia</label><input type="number" value={form.limitPerDay || 0} onChange={(e) => set('limitPerDay', +e.target.value)} /></div>
           <div className="form-group"><label>Mensagem de fallback</label><textarea value={form.fallbackMessage || ''} onChange={(e) => set('fallbackMessage', e.target.value)} /></div>
           <div className="form-group"><label>Mensagem de transferência</label><textarea value={form.transferMessage || ''} onChange={(e) => set('transferMessage', e.target.value)} /></div>
+          <div className="danger-zone">
+            <div>
+              <h4>Remover agente</h4>
+              <p>Esta ação exclui o agente e sua base de conhecimento e intenções. Não pode ser desfeita.</p>
+            </div>
+            <button className="btn btn-danger" onClick={() => setConfirmDel(true)}><i className="ti ti-trash" /> Remover agente</button>
+          </div>
         </>}
         {tab === 5 && <div className="sim-chat">
           <div className="sim-messages">{chat.length === 0 ? <p className="text-muted text-center">Envie uma mensagem para testar o agente.</p> : chat.map((m, i) => <div key={i} className={`chat-bubble ${m.role === 'user' ? 'out' : 'in'}`}>{m.text}</div>)}</div>
           <div className="sim-input"><input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="Digite uma mensagem de teste..." /><button className="btn btn-primary" onClick={send}><i className="ti ti-send" /></button></div>
         </div>}
       </div>
+
+      <ConfirmDialog open={confirmDel} onClose={() => setConfirmDel(false)} onConfirm={remove}
+        title="Remover agente" message={`Deseja realmente remover o agente "${agent!.name}"? Esta ação não pode ser desfeita.`} />
     </div>
   );
 }

@@ -31,7 +31,7 @@ export default function Login() {
       <div className="auth-visual">
         <div className="auth-visual-content">
           <div className="brand-logo lg"><i className="ti ti-message-chatbot" /></div>
-          <h1>NexAtende</h1>
+          <h1 class="text-white">FlowChat - CRM</h1>
           <p>Plataforma inteligente de atendimento, vendas e automação omnichannel.</p>
           <ul className="auth-features">
             <li><i className="ti ti-circle-check" /> Atendimento humano e por IA</li>

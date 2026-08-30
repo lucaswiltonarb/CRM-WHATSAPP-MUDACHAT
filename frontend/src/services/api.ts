@@ -1040,6 +1040,14 @@ export const api = {
       store.set('aiAgents', updated);
       return updated.find((a: any) => a.id === id);
     },
+    async remove(id: string) {
+      await delay();
+      const list = store.get('aiAgents', []);
+      store.set('aiAgents', list.filter((a: any) => a.id !== id));
+      store.set('knowledgeBase', store.get('knowledgeBase', []).filter((k: any) => k.agentId !== id));
+      store.set('intents', store.get('intents', []).filter((i: any) => i.agentId !== id));
+      return true;
+    },
     async getKnowledgeBase(agentId: string) {
       await delay(100);
       return store.get('knowledgeBase', []).filter((k: any) => k.agentId === agentId);
