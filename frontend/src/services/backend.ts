@@ -2,6 +2,8 @@
 // The backend receives Evolution webhooks and runs the automation flows, so it needs
 // a copy of the connected instances (credentials) and the automation definitions.
 
+import { dbKey } from './saas';
+
 const DEFAULT_BACKEND = 'http://localhost:5174';
 
 type ChannelCredential = {
@@ -52,7 +54,7 @@ export function backendUrl(): string {
 
 function readDb<T>(key: string): T[] {
   try {
-    const raw = localStorage.getItem(`db_${key}`);
+    const raw = localStorage.getItem(dbKey(key));
     return raw ? (JSON.parse(raw) as T[]) : [];
   } catch {
     return [];

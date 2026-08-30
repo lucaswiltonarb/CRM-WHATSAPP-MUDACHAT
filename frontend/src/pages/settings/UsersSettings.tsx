@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import type { User } from '../../types';
 import { ConfirmDialog, LoadingState, Modal, PageHeader } from '../../components/common';
 import { useToast } from '../../contexts/ToastContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 type RoleOpt = 'agent' | 'supervisor' | 'company_admin';
 type UserForm = {
@@ -30,6 +31,7 @@ const ROLE_CARDS: { id: RoleOpt; title: string; desc: string }[] = [
 
 export default function UsersSettings() {
   const { notify } = useToast();
+  const { limitOf, reached } = useWorkspace();
   const [items, setItems] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -106,6 +108,10 @@ export default function UsersSettings() {
       notify('Preencha nome e e-mail', 'warning');
       return;
     }
+    if (!editing && reached('users', items.length)) {
+      notify(`Limite de usuários do plano atingido (${limitOf('users')}).`, 'error');
+      return;
+    }
     if (form.password || form.confirmPassword) {
       if ((form.password || '').length < 6) {
         notify('Senha deve ter ao menos 6 caracteres', 'warning');
@@ -175,11 +181,17 @@ export default function UsersSettings() {
         title="UsuÃ¡rios"
         subtitle="Gerencie a equipe e acessos"
         actions={
-          <button className="btn btn-primary" onClick={openNew}>
+          <button className="btn btn-primary" onClick={openNew} disabled={reached('users', items.length)} title={reached('users', items.length) ? 'Limite do plano atingido' : ''}>
             <i className="ti ti-plus" /> Novo Usuário
           </button>
         }
       />
+
+      <div className="plan-usage-bar">
+        <i className="ti ti-users" />
+        <span>Usuários: <strong>{items.length}</strong> de {limitOf('users') === -1 ? 'ilimitados' : limitOf('users')} do seu plano</span>
+        {reached('users', items.length) && <span className="badge bg-light-danger text-danger">Limite atingido</span>}
+      </div>
       <div className="card">
         <table className="data-table">
           <thead>

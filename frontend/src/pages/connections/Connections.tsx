@@ -5,6 +5,7 @@ import { PageHeader, EmptyState, LoadingState, Modal, ConfirmDialog } from '../.
 import { useToast } from '../../contexts/ToastContext';
 import * as evo from '../../services/evolution';
 import { syncToBackend } from '../../services/backend';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 const TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
   whatsapp_official: { label: 'WhatsApp API Oficial (Meta)', icon: 'ti ti-brand-whatsapp', color: '#075e54' },
@@ -17,6 +18,7 @@ const TYPE_META: Record<string, { label: string; icon: string; color: string }> 
 
 export default function Connections() {
   const { notify } = useToast();
+  const { connectionTypes, limitOf, reached } = useWorkspace();
   const [items, setItems] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -44,6 +46,14 @@ export default function Connections() {
 
   const create = async () => {
     if (!form.name || !form.type) { notify('Preencha nome e tipo', 'warning'); return; }
+    if (reached('connections', items.length)) {
+      notify(`Limite de conexoes do plano atingido (${limitOf('connections')}). Fale com o administrador para liberar mais.`, 'error');
+      return;
+    }
+    if (!connectionTypes.includes(form.type)) {
+      notify('Este tipo de canal nao esta liberado no seu plano.', 'error');
+      return;
+    }
     const c = await api.channels.create(form);
     await api.audit.log('Canal criado', 'Conexões', 'Channel', c.id);
     setItems(p => [...p, c]); setOpen(false); notify('Conexão criada');
@@ -151,7 +161,13 @@ export default function Connections() {
   return (
     <div className="page-shell">
       <PageHeader title="Conexões / Canais" subtitle="WhatsApp, Instagram, Facebook e mais"
-        actions={<button data-testid="new-connection-btn" className="btn btn-primary" onClick={() => { setForm({ type: 'whatsapp_official', name: '', credentials: {} }); setOpen(true); }}><i className="ti ti-plus" /> Nova Conexão</button>} />
+        actions={<button data-testid="new-connection-btn" className="btn btn-primary" disabled={reached('connections', items.length)} title={reached('connections', items.length) ? 'Limite do plano atingido' : ''} onClick={() => { setForm({ type: connectionTypes[0] || 'whatsapp_official', name: '', credentials: {} }); setOpen(true); }}><i className="ti ti-plus" /> Nova Conexão</button>} />
+
+      <div className="plan-usage-bar">
+        <i className="ti ti-plug" />
+        <span>Conexões: <strong>{items.length}</strong> de {limitOf('connections') === -1 ? 'ilimitadas' : limitOf('connections')} do seu plano</span>
+        {reached('connections', items.length) && <span className="badge bg-light-danger text-danger">Limite atingido</span>}
+      </div>
 
       {items.length === 0 ? <div className="card"><EmptyState icon="ti ti-plug" title="Nenhuma conexão" description="Conecte um canal de atendimento." /></div> : (
         <div className="card-grid">
@@ -177,7 +193,7 @@ export default function Connections() {
 
       <Modal open={open} onClose={() => setOpen(false)} title={form.id ? 'Configurar Conexão' : 'Nova Conexão'} size="lg"
         footer={<><button className="btn btn-light-secondary" onClick={() => setOpen(false)}>Cancelar</button><button className="btn btn-primary" onClick={form.id ? async () => { const u = await api.channels.update(form.id, form); setItems(p => p.map(c => c.id === form.id ? u : c)); setOpen(false); notify('Salvo'); } : create}>Salvar</button></>}>
-        <div className="form-group"><label>Tipo de Canal</label><select data-testid="channel-type-select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{Object.entries(TYPE_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></div>
+        <div className="form-group"><label>Tipo de Canal</label><select data-testid="channel-type-select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{Object.entries(TYPE_META).filter(([k]) => connectionTypes.includes(k)).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></div>
         <div className="form-group"><label>Nome interno <span className="req">*</span></label><input data-testid="channel-name-input" value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Atendimento Principal" /></div>
 
         {form.type === 'whatsapp_official' && <div className="cred-box"><h4>Credenciais WhatsApp API Oficial (Meta Cloud)</h4>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 
 const roleLabels: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -14,10 +15,13 @@ const roleLabels: Record<string, string> = {
 
 export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSidebar: () => void; onToggleMobile: () => void }) {
   const { user, logout } = useAuth();
+  const { workspaces, workspace, switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
   const [dark, setDark] = useState(() => localStorage.getItem('theme-mode') === 'dark');
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [wsOpen, setWsOpen] = useState(false);
+  const isPlatformOwner = user?.role === 'super_admin';
 
   useEffect(() => {
     document.body.classList.toggle('dark', dark);
@@ -40,6 +44,36 @@ export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSi
           <i className="ti ti-search" />
           <input placeholder="Buscar conversas, contatos, leads..." />
         </div>
+        {isPlatformOwner && (
+          <div className="header-dropdown ws-switcher">
+            <button className="ws-chip" onClick={() => setWsOpen((o) => !o)} title="Trocar de workspace">
+              <i className="ti ti-building-store" />
+              <span className="desktop-only">{workspace?.name || 'Workspace'}</span>
+              <i className="ti ti-chevron-down desktop-only" />
+            </button>
+            {wsOpen && (
+              <div className="dropdown-panel ws-panel" onMouseLeave={() => setWsOpen(false)}>
+                <div className="dropdown-head"><span>Workspaces</span><span className="badge bg-light-primary text-primary">{workspaces.length}</span></div>
+                <div className="ws-panel-list app-scroll">
+                  {workspaces.map((w) => (
+                    <button
+                      key={w.id}
+                      className={`dropdown-link ${w.id === workspace?.id ? 'active' : ''}`}
+                      onClick={() => { setWsOpen(false); if (w.id !== workspace?.id) switchWorkspace(w.id); }}
+                    >
+                      <i className={w.id === workspace?.id ? 'ti ti-circle-check-filled' : 'ti ti-circle'} />
+                      <span className="ws-panel-name">{w.name}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="dropdown-divider" />
+                <button className="dropdown-link" onClick={() => { navigate('/admin/workspaces'); setWsOpen(false); }}>
+                  <i className="ti ti-settings" /> Gerenciar workspaces
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="header-right">
         <button className="icon-btn" onClick={() => setDark((d) => !d)} title="Tema">
@@ -75,6 +109,10 @@ export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSi
           {menuOpen && (
             <div className="dropdown-panel user-panel" onMouseLeave={() => setMenuOpen(false)}>
               <button className="dropdown-link" onClick={() => { navigate('/settings/company'); setMenuOpen(false); }}><i className="ti ti-settings" /> Configurações</button>
+              {isPlatformOwner && (
+                <button className="dropdown-link" onClick={() => { navigate('/admin'); setMenuOpen(false); }}><i className="ti ti-shield-cog" /> Administrativo Geral</button>
+              )}
+              <button className="dropdown-link" onClick={() => { navigate('/settings/appearance'); setMenuOpen(false); }}><i className="ti ti-palette" /> Aparência</button>
               <button className="dropdown-link" onClick={() => { navigate('/settings/license'); setMenuOpen(false); }}><i className="ti ti-license" /> Licença & Planos</button>
               <div className="dropdown-divider" />
               <button className="dropdown-link danger" onClick={async () => { await logout(); navigate('/login'); }}><i className="ti ti-logout" /> Sair</button>

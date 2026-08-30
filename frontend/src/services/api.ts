@@ -1,5 +1,6 @@
 import type { DashboardData, User } from '../types';
 import { listStoreOrdersViaBackend } from './backend';
+import { dbKey, rawKey, wsPrefix, activeWorkspaceId, setActiveWorkspace, listWorkspaces, readWorkspaceDb, DEFAULT_WORKSPACE_ID } from './saas';
 
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
@@ -8,7 +9,7 @@ const DEFAULT_ADMIN_USER: User = {
   companyId: 'company-1',
   name: 'TechServe Admin',
   email: 'contato@techserve.com.br',
-  role: 'admin',
+  role: 'super_admin',
   permissions: [],
   status: 'active',
   createdAt: new Date().toISOString(),
@@ -135,28 +136,31 @@ const DEFAULT_PLAN = { id: 'plan-base', name: 'Base', price: 0, limits: {} };
 const store = {
   get<T>(key: string, fallback: T): T {
     try {
-      const raw = localStorage.getItem(`db_${key}`);
+      const raw = localStorage.getItem(dbKey(key));
       if (raw) return JSON.parse(raw) as T;
     } catch {}
     return fallback;
   },
   set<T>(key: string, value: T): T {
-    localStorage.setItem(`db_${key}`, JSON.stringify(value));
+    localStorage.setItem(dbKey(key), JSON.stringify(value));
     return value;
   },
 };
 
 const ensureRealDbSeed = () => {
-  if (localStorage.getItem('db_seeded_v2_real_data') === '1') return;
+  if (localStorage.getItem(rawKey('db_seeded_v2_real_data')) === '1') return;
 
   const keep = {
     authToken: localStorage.getItem('auth_token'),
     authUser: localStorage.getItem('auth_user'),
   };
 
+  const prefix = wsPrefix(activeWorkspaceId());
   const keys = Object.keys(localStorage);
   keys.forEach((k) => {
-    if (k.startsWith('db_') || k.startsWith('followup_') || k === 'crm_stage_order') {
+    if (!k.startsWith(prefix)) return;
+    const rest = k.slice(prefix.length);
+    if (rest.startsWith('db_') || rest.startsWith('followup_') || rest === 'crm_stage_order') {
       localStorage.removeItem(k);
     }
   });
@@ -213,15 +217,34 @@ const ensureRealDbSeed = () => {
 
   if (keep.authToken) localStorage.setItem('auth_token', keep.authToken);
   if (keep.authUser) localStorage.setItem('auth_user', keep.authUser);
-  localStorage.setItem('db_seeded_v2_real_data', '1');
+  localStorage.setItem(rawKey('db_seeded_v2_real_data'), '1');
 };
 
 ensureRealDbSeed();
 
+// O primeiro usuario do workspace principal e o dono da plataforma (super admin),
+// unico com acesso ao Administrativo Geral.
+const ensurePlatformOwner = () => {
+  if (activeWorkspaceId() !== DEFAULT_WORKSPACE_ID) return;
+  const users = store.get<any[]>('users', []);
+  if (!users.length) return;
+  if (users.some((u: any) => u.role === 'super_admin')) return;
+  const promoted = { ...users[0], role: 'super_admin' };
+  store.set('users', [promoted, ...users.slice(1)]);
+  try {
+    const raw = localStorage.getItem('auth_user');
+    if (raw) {
+      const au = JSON.parse(raw);
+      if (au && au.id === promoted.id) localStorage.setItem('auth_user', JSON.stringify(promoted));
+    }
+  } catch {}
+};
+ensurePlatformOwner();
+
 const uid = () => `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const readStoreOrders = () => {
   try {
-    const raw = localStorage.getItem('db_store_orders');
+    const raw = localStorage.getItem(dbKey('store_orders'));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -232,8 +255,27 @@ export const api = {
   auth: {
     async login(email: string, _password: string) {
       await delay();
+      const target = String(email).toLowerCase().trim();
       const users = store.get<User[]>('users', [DEFAULT_ADMIN_USER]);
-      const user = users.find((u) => u.email.toLowerCase() === String(email).toLowerCase()) || users[0];
+      let user = users.find((u) => String(u.email || '').toLowerCase() === target);
+
+      // o e-mail pode pertencer a outro workspace: procura em todos e entra no correto
+      if (!user) {
+        for (const ws of listWorkspaces()) {
+          if (ws.id === activeWorkspaceId()) continue;
+          const wsUsers = readWorkspaceDb<User[]>(ws.id, 'users', []);
+          const found = wsUsers.find((u) => String(u.email || '').toLowerCase() === target);
+          if (found) {
+            setActiveWorkspace(ws.id);
+            localStorage.setItem('auth_token', `mock-token-${found.id}`);
+            localStorage.setItem('auth_user', JSON.stringify(found));
+            window.location.reload();
+            return { user: found, token: `mock-token-${found.id}`, company: null as any };
+          }
+        }
+      }
+
+      user = user || users[0];
       const token = `mock-token-${user.id}`;
       localStorage.setItem('auth_token', token);
       localStorage.setItem('auth_user', JSON.stringify(user));
@@ -262,7 +304,7 @@ export const api = {
       const backendOrders = await listStoreOrdersViaBackend();
       const storeOrders = (backendOrders.ok ? backendOrders.orders : readStoreOrders()) as any[];
       try {
-        localStorage.setItem('db_store_orders', JSON.stringify(storeOrders));
+        localStorage.setItem(dbKey('store_orders'), JSON.stringify(storeOrders));
       } catch {}
       const channels = store.get<any[]>('channels', []);
 
