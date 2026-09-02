@@ -6,6 +6,7 @@
 
 import type {
   ConnectionType,
+  WorkspaceIntegrations,
   FeatureKey,
   LimitKey,
   PlanFeatures,
@@ -147,7 +148,7 @@ const DEFAULT_PLANS: SaasPlan[] = [
       registers: true,
       users: true,
     },
-    connectionTypes: ['whatsapp_evolution'],
+    connectionTypes: ['whatsapp_evolution', 'whatsapp_uazapi'],
   }),
   makePlan({
     id: 'plan-pro',
@@ -176,7 +177,7 @@ const DEFAULT_PLANS: SaasPlan[] = [
       whiteLabel: false,
       apiAccess: false,
     },
-    connectionTypes: ['whatsapp_evolution', 'whatsapp_official', 'instagram', 'webchat'],
+    connectionTypes: ['whatsapp_evolution', 'whatsapp_uazapi', 'whatsapp_official', 'instagram', 'webchat'],
   }),
   makePlan({
     id: 'plan-enterprise',
@@ -187,7 +188,7 @@ const DEFAULT_PLANS: SaasPlan[] = [
     color: '#7C3AED',
     limits: allLimits(UNLIMITED),
     features: allFeatures(true),
-    connectionTypes: ['whatsapp_evolution', 'whatsapp_official', 'whatsapp_twilio', 'instagram', 'facebook', 'webchat'],
+    connectionTypes: ['whatsapp_evolution', 'whatsapp_uazapi', 'whatsapp_official', 'whatsapp_twilio', 'instagram', 'facebook', 'webchat'],
   }),
 ];
 
@@ -260,6 +261,7 @@ export function saveWorkspace(data: Partial<Workspace> & { name: string }): Work
       ...data,
       slug: data.slug || list[idx].slug,
       theme: { ...(list[idx].theme || {}), ...(data.theme || {}) },
+      integrations: { ...(list[idx].integrations || {}), ...(data.integrations || {}) },
       featureOverrides: { ...(list[idx].featureOverrides || {}), ...(data.featureOverrides || {}) },
       limitOverrides: { ...(list[idx].limitOverrides || {}), ...(data.limitOverrides || {}) },
       updatedAt: now(),
@@ -283,6 +285,7 @@ export function saveWorkspace(data: Partial<Workspace> & { name: string }): Work
     expiresAt: data.expiresAt ?? null,
     notes: data.notes || '',
     theme: data.theme || {},
+    integrations: data.integrations || {},
     featureOverrides: data.featureOverrides || {},
     limitOverrides: data.limitOverrides || {},
     createdAt: now(),
@@ -407,7 +410,7 @@ export function effectivePlan(ws: Workspace | null): EffectivePlan {
     plan,
     features: plan ? { ...plan.features } : allFeatures(true),
     limits: plan ? { ...plan.limits } : allLimits(UNLIMITED),
-    connectionTypes: plan ? [...plan.connectionTypes] : ['whatsapp_evolution', 'whatsapp_official', 'whatsapp_twilio', 'instagram', 'facebook', 'webchat'],
+    connectionTypes: plan ? [...plan.connectionTypes] : ['whatsapp_evolution', 'whatsapp_uazapi', 'whatsapp_official', 'whatsapp_twilio', 'instagram', 'facebook', 'webchat'],
   };
   if (!ws) return base;
   // workspace suspenso: mantem apenas leitura do dashboard
@@ -437,6 +440,11 @@ export function limitReached(limits: PlanLimits, key: LimitKey, current: number)
 
 export function hasFeature(features: PlanFeatures, key: FeatureKey): boolean {
   return features[key] !== false;
+}
+
+/** credenciais de integracao do workspace (definidas no administrativo geral) */
+export function workspaceIntegrations(ws: Workspace | null): WorkspaceIntegrations {
+  return (ws && ws.integrations) || {};
 }
 
 /* ------------------------------------------------------------------ *

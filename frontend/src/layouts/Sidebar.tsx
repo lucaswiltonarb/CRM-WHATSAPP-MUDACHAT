@@ -33,6 +33,7 @@ const navGroups: NavGroup[] = [
       { label: 'Visao Geral', icon: 'ti ti-shield-cog', path: '/admin' },
       { label: 'Workspaces', icon: 'ti ti-building-store', path: '/admin/workspaces' },
       { label: 'Planos', icon: 'ti ti-package', path: '/admin/plans' },
+      { label: 'Integracoes', icon: 'ti ti-plug-connected', path: '/admin/integrations' },
     ],
   },
   {

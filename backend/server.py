@@ -113,7 +113,49 @@ def clean_url(u: str) -> str:
 def evo_headers(api_key: str) -> dict:
     return {"Content-Type": "application/json", "apikey": api_key}
 
+def is_uazapi(inst: dict) -> bool:
+    return str((inst or {}).get("provider") or "").lower() == "uazapi"
+
+def uaz_headers(token: str) -> dict:
+    return {"Content-Type": "application/json", "token": token}
+
+async def uaz_send_text(inst: dict, number: str, text: str) -> bool:
+    import httpx
+    url = f"{clean_url(inst['serverUrl'])}/send/text"
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            res = await client.post(url, headers=uaz_headers(inst["apiKey"]),
+                                    json={"number": number, "text": text})
+            if not res.is_success:
+                logger.warning(f"[uaz sendText] HTTP {res.status_code} {res.text[:200]}")
+            return res.is_success
+    except Exception as e:
+        logger.warning(f"[uaz sendText] error {e}")
+        return False
+
+async def uaz_set_webhook(inst: dict) -> bool:
+    import httpx
+    url = f"{clean_url(inst['serverUrl'])}/webhook"
+    hook = f"{PUBLIC_URL}/webhook/{inst.get('instanceName') or ''}"
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            res = await client.post(url, headers=uaz_headers(inst["apiKey"]), json={
+                "enabled": True,
+                "url": hook,
+                "events": ["messages", "connection"],
+                "excludeMessages": ["fromMe"],
+                "action": "add",
+            })
+            if not res.is_success:
+                logger.warning(f"[uaz setWebhook] HTTP {res.status_code} {res.text[:200]}")
+            return res.is_success
+    except Exception as e:
+        logger.warning(f"[uaz setWebhook] error {e}")
+        return False
+
 async def evo_send_text(inst: dict, number: str, text: str) -> bool:
+    if is_uazapi(inst):
+        return await uaz_send_text(inst, number, text)
     import httpx
     url = f"{clean_url(inst['serverUrl'])}/message/sendText/{inst['instanceName']}"
     try:
@@ -136,6 +178,8 @@ async def evo_send_catalog(inst: dict, number: str, products: list) -> bool:
     return await evo_send_text(inst, number, "\n".join(lines))
 
 async def evo_set_webhook(inst: dict) -> bool:
+    if is_uazapi(inst):
+        return await uaz_set_webhook(inst)
     import httpx
     url = f"{clean_url(inst['serverUrl'])}/webhook/set/{inst['instanceName']}"
     webhook_url = f"{PUBLIC_URL}/webhook"
@@ -781,8 +825,28 @@ async def asaas_webhook(request: Request):
 # ---------- Webhook endpoints ----------
 async def process_webhook(request: Request, instance: str = None, event_name: str = None):
     payload = await request.json()
-    evt = str(payload.get("event") or payload.get("type") or "").lower().replace("_", ".")
+    evt = str(payload.get("event") or payload.get("type") or payload.get("EventType") or "").lower().replace("_", ".")
     instance_name = payload.get("instance") or payload.get("instanceName") or instance
+
+    # ---- formato uazapi: {event: "message"|"messages", instance, data|message: {...}} ----
+    if evt in ("message", "messages"):
+        uaz_msg = payload.get("message") or payload.get("data") or {}
+        if isinstance(uaz_msg, dict) and ("sender" in uaz_msg or "chatid" in uaz_msg):
+            if uaz_msg.get("fromMe") or uaz_msg.get("isGroup"):
+                return {"received": True}
+            mid = uaz_msg.get("messageid") or uaz_msg.get("id")
+            if mid and mid in processed:
+                return {"received": True}
+            if mid:
+                processed.add(mid)
+                if len(processed) > 5000:
+                    processed.clear()
+            raw_sender = str(uaz_msg.get("sender") or uaz_msg.get("chatid") or "")
+            number = raw_sender.split("@")[0].split(":")[0]
+            text = str(uaz_msg.get("text") or uaz_msg.get("content") or "")
+            if number:
+                asyncio.create_task(handle_incoming(instance_name, number, text, uaz_msg.get("senderName", "")))
+            return {"received": True}
 
     if evt not in ("messages.upsert", "messages.update"):
         return {"received": True}
@@ -944,3 +1008,292 @@ async def webhook_noapi_instance(instance: str, request: Request):
 @app.post("/webhook/{instance}/{event_name}")
 async def webhook_noapi_instance_event(instance: str, event_name: str, request: Request):
     return await process_webhook(request, instance=instance, event_name=event_name)
+
+
+# ============================================================
+# UAZAPI: proxy server-side (evita CORS no navegador)
+# ============================================================
+
+UAZAPI_TIMEOUT = 30
+UAZAPI_ALLOWED_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+
+
+@app.post("/api/uazapi/proxy")
+async def uazapi_proxy(request: Request):
+    """Encaminha uma chamada para a uazapi.
+
+    Body: { baseUrl, path, method, token?, admintoken?, body? }
+    """
+    import httpx
+
+    body = await request.json()
+    base_url = clean_url(str(body.get("baseUrl") or ""))
+    path = str(body.get("path") or "")
+    method = str(body.get("method") or "GET").upper()
+    token = body.get("token")
+    admintoken = body.get("admintoken")
+    payload = body.get("body")
+
+    if not base_url or not path:
+        return {"ok": False, "error": "baseUrl e path sao obrigatorios"}
+    if method not in UAZAPI_ALLOWED_METHODS:
+        return {"ok": False, "error": f"metodo {method} nao permitido"}
+    if not base_url.startswith("http"):
+        base_url = f"https://{base_url}"
+    if not path.startswith("/"):
+        path = "/" + path
+
+    headers = {"Content-Type": "application/json"}
+    if token:
+        headers["token"] = str(token)
+    if admintoken:
+        headers["admintoken"] = str(admintoken)
+
+    try:
+        async with httpx.AsyncClient(timeout=UAZAPI_TIMEOUT) as client:
+            resp = await client.request(
+                method,
+                f"{base_url}{path}",
+                headers=headers,
+                json=payload if method != "GET" else None,
+            )
+        try:
+            data = resp.json()
+        except Exception:
+            data = {"raw": resp.text}
+        return {"ok": resp.status_code < 400, "status": resp.status_code, "data": data}
+    except Exception as e:
+        logger.warning("uazapi proxy error: %s", e)
+        return {"ok": False, "error": str(e)}
+
+
+# ============================================================
+# Instagram: Login com Instagram (Instagram API with Instagram Login)
+# ============================================================
+
+IG_AUTH_URL = "https://www.instagram.com/oauth/authorize"
+IG_TOKEN_URL = "https://api.instagram.com/oauth/access_token"
+IG_GRAPH_URL = "https://graph.instagram.com"
+IG_DEFAULT_SCOPES = "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments"
+
+# resultados temporarios do OAuth, consumidos uma unica vez pelo frontend
+IG_SESSIONS: dict = {}
+
+
+def ig_config() -> dict:
+    """Credenciais do app global do Instagram. Env vars tem prioridade."""
+    saved = (db.get("integrations") or {}).get("instagram_app") or {}
+    return {
+        "appId": os.environ.get("IG_APP_ID") or saved.get("appId") or "",
+        "appSecret": os.environ.get("IG_APP_SECRET") or saved.get("appSecret") or "",
+        "redirectUri": os.environ.get("IG_REDIRECT_URI") or saved.get("redirectUri") or f"{PUBLIC_URL}/instagram/callback",
+        "scopes": saved.get("scopes") or IG_DEFAULT_SCOPES,
+        "fromEnv": bool(os.environ.get("IG_APP_ID")),
+    }
+
+
+@app.get("/api/integrations/instagram/config")
+async def ig_get_config():
+    cfg = ig_config()
+    return {
+        "ok": True,
+        "appId": cfg["appId"],
+        "redirectUri": cfg["redirectUri"],
+        "scopes": cfg["scopes"],
+        "hasSecret": bool(cfg["appSecret"]),
+        "fromEnv": cfg["fromEnv"],
+        "configured": bool(cfg["appId"] and cfg["appSecret"]),
+    }
+
+
+@app.post("/api/integrations/instagram/config")
+async def ig_save_config(request: Request):
+    body = await request.json()
+    integrations = db.get("integrations")
+    if not isinstance(integrations, dict):
+        integrations = {}
+    current = integrations.get("instagram_app") or {}
+    app_id = str(body.get("appId") or "").strip()
+    app_secret = str(body.get("appSecret") or "").strip()
+    redirect_uri = str(body.get("redirectUri") or "").strip()
+    scopes = str(body.get("scopes") or "").strip()
+
+    current["appId"] = app_id or current.get("appId", "")
+    # secret vazio no formulario significa "manter o que ja esta salvo"
+    if app_secret:
+        current["appSecret"] = app_secret
+    current["redirectUri"] = redirect_uri or current.get("redirectUri", "")
+    current["scopes"] = scopes or current.get("scopes", IG_DEFAULT_SCOPES)
+
+    integrations["instagram_app"] = current
+    db["integrations"] = integrations
+    persist()
+    return await ig_get_config()
+
+
+@app.get("/api/instagram/auth-url")
+async def ig_auth_url(state: str = ""):
+    """Monta a URL de autorizacao mantendo o app id no servidor."""
+    cfg = ig_config()
+    if not cfg["appId"] or not cfg["appSecret"]:
+        return {"ok": False, "error": "App do Instagram nao configurado no Administrativo Geral."}
+    if not state:
+        state = uid()
+    from urllib.parse import urlencode
+
+    query = urlencode({
+        "client_id": cfg["appId"],
+        "redirect_uri": cfg["redirectUri"],
+        "response_type": "code",
+        "scope": cfg["scopes"],
+        "state": state,
+    })
+    return {"ok": True, "url": f"{IG_AUTH_URL}?{query}", "state": state, "redirectUri": cfg["redirectUri"]}
+
+
+def _ig_popup_html(title: str, message: str, payload: dict) -> str:
+    safe = json.dumps(payload)
+    return f"""<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>{title}</title>
+<style>
+ body{{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0f1a2e;color:#fff;display:flex;
+ align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:2rem}}
+ .box{{max-width:420px}} h1{{font-size:1.2rem;margin:0 0 .5rem}} p{{color:#aab3c5;font-size:.9rem;line-height:1.5}}
+</style></head>
+<body><div class="box"><h1>{title}</h1><p>{message}</p></div>
+<script>
+ var payload = {safe};
+ try {{ if (window.opener) window.opener.postMessage({{ source: 'leadflow-instagram', payload: payload }}, '*'); }} catch (e) {{}}
+ setTimeout(function () {{ window.close(); }}, 2500);
+</script></body></html>"""
+
+
+@app.get("/api/instagram/callback")
+async def ig_callback(code: str = "", state: str = "", error: str = "", error_description: str = ""):
+    """Recebe o retorno do Instagram, troca o code por token de longa duracao."""
+    import httpx
+
+    if error:
+        payload = {"ok": False, "error": error_description or error}
+        if state:
+            IG_SESSIONS[state] = payload
+        return Response(
+            content=_ig_popup_html("Autorizacao cancelada", error_description or error, payload),
+            media_type="text/html",
+        )
+
+    cfg = ig_config()
+    if not cfg["appId"] or not cfg["appSecret"]:
+        payload = {"ok": False, "error": "App do Instagram nao configurado."}
+        if state:
+            IG_SESSIONS[state] = payload
+        return Response(content=_ig_popup_html("Configuracao ausente", payload["error"], payload), media_type="text/html")
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            # 1) code -> token de curta duracao
+            short = await client.post(
+                IG_TOKEN_URL,
+                data={
+                    "client_id": cfg["appId"],
+                    "client_secret": cfg["appSecret"],
+                    "grant_type": "authorization_code",
+                    "redirect_uri": cfg["redirectUri"],
+                    "code": code,
+                },
+            )
+            short_data = short.json()
+            if short.status_code >= 400 or not short_data.get("access_token"):
+                raise RuntimeError(short_data.get("error_message") or short_data.get("error") or "Falha ao trocar o code por token")
+
+            short_token = short_data["access_token"]
+            ig_user_id = str(short_data.get("user_id") or "")
+
+            # 2) token de curta -> longa duracao (60 dias)
+            long_resp = await client.get(
+                f"{IG_GRAPH_URL}/access_token",
+                params={
+                    "grant_type": "ig_exchange_token",
+                    "client_secret": cfg["appSecret"],
+                    "access_token": short_token,
+                },
+            )
+            long_data = long_resp.json()
+            access_token = long_data.get("access_token") or short_token
+            expires_in = long_data.get("expires_in")
+
+            # 3) dados do perfil conectado
+            profile = {}
+            try:
+                me = await client.get(
+                    f"{IG_GRAPH_URL}/v23.0/me",
+                    params={
+                        "fields": "user_id,username,name,profile_picture_url,account_type",
+                        "access_token": access_token,
+                    },
+                )
+                if me.status_code < 400:
+                    profile = me.json()
+            except Exception:
+                profile = {}
+
+        payload = {
+            "ok": True,
+            "accessToken": access_token,
+            "userId": str(profile.get("user_id") or ig_user_id),
+            "username": profile.get("username") or "",
+            "name": profile.get("name") or "",
+            "profilePicture": profile.get("profile_picture_url") or "",
+            "accountType": profile.get("account_type") or "",
+            "expiresIn": expires_in,
+            "connectedAt": datetime.now(timezone.utc).isoformat(),
+        }
+        if state:
+            IG_SESSIONS[state] = payload
+        return Response(
+            content=_ig_popup_html(
+                "Instagram conectado",
+                f"Conta @{payload['username'] or payload['userId']} autorizada. Pode fechar esta janela.",
+                payload,
+            ),
+            media_type="text/html",
+        )
+    except Exception as e:
+        logger.warning("instagram callback error: %s", e)
+        payload = {"ok": False, "error": str(e)}
+        if state:
+            IG_SESSIONS[state] = payload
+        return Response(content=_ig_popup_html("Falha na conexao", str(e), payload), media_type="text/html")
+
+
+@app.get("/api/instagram/result")
+async def ig_result(state: str):
+    """O frontend consulta aqui o resultado do popup (consumido uma unica vez)."""
+    if state in IG_SESSIONS:
+        return {"ok": True, "ready": True, "result": IG_SESSIONS.pop(state)}
+    return {"ok": True, "ready": False}
+
+
+@app.post("/api/instagram/send-text")
+async def ig_send_text(request: Request):
+    """Envia DM pelo Instagram usando o token da conta conectada."""
+    import httpx
+
+    body = await request.json()
+    access_token = str(body.get("accessToken") or "")
+    ig_user_id = str(body.get("userId") or "")
+    recipient = str(body.get("to") or "")
+    text = str(body.get("text") or "")
+    if not (access_token and ig_user_id and recipient and text):
+        return {"ok": False, "error": "accessToken, userId, to e text sao obrigatorios"}
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.post(
+                f"{IG_GRAPH_URL}/v23.0/{ig_user_id}/messages",
+                headers={"Authorization": f"Bearer {access_token}"},
+                json={"recipient": {"id": recipient}, "message": {"text": text}},
+            )
+        data = resp.json() if resp.content else {}
+        return {"ok": resp.status_code < 400, "status": resp.status_code, "data": data}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}

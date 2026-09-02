@@ -4,12 +4,16 @@ import type { Channel } from '../../types';
 import { PageHeader, EmptyState, LoadingState, Modal, ConfirmDialog } from '../../components/common';
 import { useToast } from '../../contexts/ToastContext';
 import * as evo from '../../services/evolution';
+import * as uaz from '../../services/uazapi';
+import * as ig from '../../services/instagram';
+import { backendUrl } from '../../services/backend';
 import { syncToBackend } from '../../services/backend';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 const TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
   whatsapp_official: { label: 'WhatsApp API Oficial (Meta)', icon: 'ti ti-brand-whatsapp', color: '#075e54' },
   whatsapp_evolution: { label: 'WhatsApp (Evolution API)', icon: 'ti ti-brand-whatsapp', color: '#25d366' },
+  whatsapp_uazapi: { label: 'WhatsApp (UAZAPI)', icon: 'ti ti-brand-whatsapp', color: '#12b886' },
   whatsapp_twilio: { label: 'WhatsApp (Twilio)', icon: 'ti ti-brand-whatsapp', color: '#f22f46' },
   instagram: { label: 'Instagram', icon: 'ti ti-brand-instagram', color: '#e1306c' },
   facebook: { label: 'Facebook', icon: 'ti ti-brand-facebook', color: '#1877f2' },
@@ -18,7 +22,8 @@ const TYPE_META: Record<string, { label: string; icon: string; color: string }> 
 
 export default function Connections() {
   const { notify } = useToast();
-  const { connectionTypes, limitOf, reached } = useWorkspace();
+  const { connectionTypes, limitOf, reached, integrations, workspace } = useWorkspace();
+  const [igBusy, setIgBusy] = useState(false);
   const [items, setItems] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -59,6 +64,40 @@ export default function Connections() {
     setItems(p => [...p, c]); setOpen(false); notify('Conexão criada');
   };
 
+  const connectInstagram = async (c: Channel) => {
+    setIgBusy(true);
+    try {
+      await api.channels.update(c.id, { status: 'connecting' });
+      setItems(p => p.map(x => x.id === c.id ? { ...x, status: 'connecting' } : x));
+      const acc = await ig.loginWithInstagram();
+      const u = await api.channels.update(c.id, {
+        status: 'connected',
+        lastSync: new Date().toISOString(),
+        credentials: {
+          ...(c.credentials || {}),
+          provider: 'instagram_login',
+          accessToken: acc.accessToken,
+          userId: acc.userId,
+          username: acc.username,
+          profilePicture: acc.profilePicture,
+          accountType: acc.accountType,
+          expiresIn: acc.expiresIn,
+          connectedAt: acc.connectedAt,
+        },
+      });
+      setItems(p => p.map(x => x.id === c.id ? u : x));
+      notify(`Instagram conectado: @${acc.username || acc.userId}`);
+      api.audit.log('Canal Instagram conectado', 'Conexoes', 'Channel', c.id);
+      await syncToBackend();
+    } catch (e: any) {
+      notify(e?.message || 'Falha ao conectar o Instagram', 'error');
+      await api.channels.update(c.id, { status: 'error' });
+      setItems(p => p.map(x => x.id === c.id ? { ...x, status: 'error' } : x));
+    } finally {
+      setIgBusy(false);
+    }
+  };
+
   const startConnect = async (c: Channel) => {
     const creds = evoCreds(c);
     setQrModal(c); setQrImg(''); setQrPairing(''); setQrError(''); setQrData(''); setQrStatus('Iniciando...');
@@ -89,6 +128,84 @@ export default function Connections() {
         await api.channels.update(c.id, { status: 'error' });
         setItems(p => p.map(x => x.id === c.id ? { ...x, status: 'error' } : x));
       }
+      return;
+    }
+
+    // ---- UAZAPI: cria a instancia com o admintoken do workspace e mostra o QR ----
+    if ((c.type as string) === 'whatsapp_uazapi') {
+      const cfg = integrations.uazapi;
+      if (!cfg?.serverUrl || !cfg?.adminToken) {
+        setQrError('As credenciais da UAZAPI deste workspace ainda nao foram cadastradas. Peca ao administrador da plataforma para preencher em Administrativo Geral > Workspaces > Credenciais.');
+        setQrStatus('');
+        return;
+      }
+      const cr: any = c.credentials || {};
+      const slug = String(c.name || 'canal').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20);
+      const instanceName = cr.instanceName || `${cfg.instancePrefix || workspace?.slug || 'crm'}-${slug}`;
+      let token: string = cr.token || '';
+      try {
+        await api.channels.update(c.id, { status: 'connecting' });
+        setItems(p => p.map(x => x.id === c.id ? { ...x, status: 'connecting' } : x));
+
+        if (!token) {
+          setQrStatus('Criando instancia na UAZAPI...');
+          const created = await uaz.createInstance({ serverUrl: cfg.serverUrl, adminToken: cfg.adminToken }, instanceName);
+          token = created.token || '';
+          if (!token) throw new Error('A UAZAPI nao retornou o token da instancia.');
+          const withToken = { ...cr, instanceName, token, serverUrl: cfg.serverUrl, provider: 'uazapi' };
+          await api.channels.update(c.id, { credentials: withToken });
+          setItems(p => p.map(x => x.id === c.id ? ({ ...x, credentials: withToken } as any) : x));
+        }
+
+        const creds2 = { serverUrl: cfg.serverUrl, token, instanceName };
+        setQrStatus('Gerando QR Code...');
+        const conn = await uaz.connectInstance(creds2);
+        if (conn.qrcode) setQrImg(conn.qrcode);
+        if (conn.paircode) setQrPairing(conn.paircode);
+        if (!conn.qrcode && !conn.paircode && conn.status !== 'connected') {
+          setQrError('A UAZAPI nao retornou QR Code. Confira o servidor e o admin token do workspace.');
+        }
+        setQrStatus('Aguardando leitura no WhatsApp...');
+
+        stopPoll();
+        let ticks = 0;
+        pollRef.current = setInterval(async () => {
+          ticks++;
+          try {
+            const st = await uaz.instanceStatus(creds2);
+            if (st.status === 'connected') {
+              stopPoll();
+              await uaz.setWebhook(creds2, `${backendUrl()}/api/webhook/${encodeURIComponent(instanceName)}`);
+              const u = await api.channels.update(c.id, {
+                status: 'connected',
+                lastSync: new Date().toISOString(),
+                credentials: { ...cr, instanceName, token, serverUrl: cfg.serverUrl, provider: 'uazapi', owner: st.owner, profileName: st.profileName },
+              });
+              setItems(p => p.map(x => x.id === c.id ? u : x));
+              notify(st.profileName ? `WhatsApp conectado via UAZAPI (${st.profileName})!` : 'WhatsApp conectado via UAZAPI!');
+              api.audit.log('Canal UAZAPI conectado', 'Conexoes', 'Channel', c.id);
+              const sync = await syncToBackend();
+              if (!sync.ok) notify(`Conectado, mas a sincronizacao com o backend falhou (${sync.error}).`, 'warning');
+              closeQr();
+            } else if (st.qrcode && ticks % 4 === 0) {
+              setQrImg(st.qrcode);
+            }
+          } catch { /* segue tentando */ }
+          if (ticks > 60) { stopPoll(); setQrStatus('Tempo esgotado. Tente novamente.'); }
+        }, 3000);
+      } catch (e: any) {
+        setQrError(e?.message || 'Falha ao conectar na UAZAPI.');
+        setQrStatus('');
+        await api.channels.update(c.id, { status: 'error' });
+        setItems(p => p.map(x => x.id === c.id ? { ...x, status: 'error' } : x));
+      }
+      return;
+    }
+
+    // ---- Instagram: login OAuth na propria pagina do Instagram ----
+    if ((c.type as string) === 'instagram') {
+      closeQr();
+      await connectInstagram(c);
       return;
     }
 
@@ -181,7 +298,10 @@ export default function Connections() {
               <p className="conn-type">{m.label}</p>
               {c.lastSync && <p className="text-xs text-muted">Última sincronização: {new Date(c.lastSync).toLocaleString('pt-BR')}</p>}
               <div className="flex gap-1 mt-1">
-                {c.status !== 'connected' ? <button className="btn btn-sm btn-success" onClick={() => startConnect(c)}><i className="ti ti-qrcode" /> Conectar</button>
+                {c.status !== 'connected' ? (
+                  (c.type as string) === 'instagram'
+                    ? <button className="btn btn-sm btn-instagram" disabled={igBusy} onClick={() => connectInstagram(c)}><i className="ti ti-brand-instagram" /> {igBusy ? 'Aguardando...' : 'Entrar com Instagram'}</button>
+                    : <button className="btn btn-sm btn-success" onClick={() => startConnect(c)}><i className="ti ti-qrcode" /> Conectar</button>)
                   : <button className="btn btn-sm btn-light-danger" onClick={() => disconnect(c)}>Desconectar</button>}
                 <button className="btn btn-sm btn-light-secondary" onClick={() => { setForm(c); setOpen(true); }}><i className="ti ti-settings" /></button>
                 <button className="btn btn-sm btn-light-danger" onClick={() => setDelId(c.id)}><i className="ti ti-trash" /></button>
@@ -214,6 +334,24 @@ export default function Connections() {
           <div className="form-group"><label>API Key</label><input type="password" value={form.credentials?.apiKey || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, apiKey: e.target.value } })} /></div>
           <div className="form-group"><label>Nome da Instância</label><input value={form.credentials?.instanceName || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, instanceName: e.target.value } })} placeholder="minha-instancia" /></div>
         </div>}
+        {form.type === 'whatsapp_uazapi' && <div className="cred-box"><h4>Conexao via UAZAPI</h4>
+          {integrations.uazapi?.serverUrl && integrations.uazapi?.adminToken ? (
+            <>
+              <p className="text-sm text-muted" style={{marginBottom:'1rem'}}>Este workspace ja tem credenciais UAZAPI cadastradas pelo administrador da plataforma. Basta dar um nome ao canal e clicar em <strong>Conectar</strong> para ler o QR Code.</p>
+              <div className="form-group"><label>Servidor</label><input value={integrations.uazapi.serverUrl} readOnly disabled /></div>
+              <div className="form-group"><label>Nome da instancia (opcional)</label><input value={form.credentials?.instanceName || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, instanceName: e.target.value } })} placeholder="deixe vazio para gerar automaticamente" /></div>
+              <div className="alert-note"><i className="ti ti-info-circle" /> A instancia e o token sao criados automaticamente na UAZAPI na primeira conexao.</div>
+            </>
+          ) : (
+            <div className="alert-note"><i className="ti ti-alert-triangle" /> As credenciais UAZAPI deste workspace ainda nao foram cadastradas. Configure em <strong>Administrativo Geral &gt; Workspaces &gt; Credenciais</strong>.</div>
+          )}
+        </div>}
+
+        {form.type === 'instagram' && <div className="cred-box"><h4>Instagram</h4>
+          <p className="text-sm text-muted" style={{marginBottom:'1rem'}}>A conexao e feita pelo login do proprio Instagram. Salve o canal e depois clique em <strong>Entrar com Instagram</strong> no card: uma janela do Instagram vai abrir para autorizar a conta.</p>
+          <div className="alert-note"><i className="ti ti-info-circle" /> A conta precisa ser <strong>Comercial ou Criador</strong>. O app da Meta usado e o mesmo para toda a plataforma e fica em Administrativo Geral &gt; Integracoes.</div>
+        </div>}
+
         {form.type === 'whatsapp_twilio' && <div className="cred-box"><h4>Credenciais Twilio</h4>
           <div className="form-group"><label>Account SID</label><input value={form.credentials?.accountSid || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, accountSid: e.target.value } })} /></div>
           <div className="form-group"><label>Auth Token</label><input type="password" value={form.credentials?.authToken || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, authToken: e.target.value } })} /></div>

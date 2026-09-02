@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { FeatureKey, LimitKey, SaasPlan, Workspace, WorkspaceTheme, WorkspaceUsage } from '../types/saas';
+import type { FeatureKey, LimitKey, SaasPlan, Workspace, WorkspaceIntegrations, WorkspaceTheme, WorkspaceUsage } from '../types/saas';
 import { DEFAULT_THEME } from '../types/saas';
 import * as saas from '../services/saas';
 
@@ -17,6 +17,8 @@ interface WorkspaceContextType {
   reached: (key: LimitKey, current: number) => boolean;
   /** tipos de conexao permitidos pelo plano */
   connectionTypes: string[];
+  /** credenciais externas do workspace (uazapi etc), definidas no administrativo */
+  integrations: WorkspaceIntegrations;
   switchWorkspace: (id: string) => void;
   saveTheme: (theme: Partial<WorkspaceTheme>) => void;
   refresh: () => void;
@@ -138,6 +140,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     limitOf: (key) => eff.limits[key],
     reached: (key, current) => saas.limitReached(eff.limits, key, current),
     connectionTypes: eff.connectionTypes,
+    integrations: saas.workspaceIntegrations(workspace),
     switchWorkspace,
     saveTheme,
     refresh,

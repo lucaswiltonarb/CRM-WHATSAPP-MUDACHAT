@@ -40,6 +40,7 @@ import Audit from './pages/reports/Audit';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminWorkspaces from './pages/admin/AdminWorkspaces';
 import AdminPlans from './pages/admin/AdminPlans';
+import AdminIntegrations from './pages/admin/AdminIntegrations';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -133,6 +134,7 @@ export default function App() {
                 <Route path="admin" element={<AdminRoute><AdminOverview /></AdminRoute>} />
                 <Route path="admin/workspaces" element={<AdminRoute><AdminWorkspaces /></AdminRoute>} />
                 <Route path="admin/plans" element={<AdminRoute><AdminPlans /></AdminRoute>} />
+                <Route path="admin/integrations" element={<AdminRoute><AdminIntegrations /></AdminRoute>} />
               </Route>
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>

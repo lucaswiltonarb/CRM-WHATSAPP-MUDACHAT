@@ -3,6 +3,7 @@ import { PageHeader, Modal, ConfirmDialog, EmptyState } from '../../components/c
 import { useToast } from '../../contexts/ToastContext';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 import * as saas from '../../services/saas';
+import * as uaz from '../../services/uazapi';
 import { FEATURE_GROUPS, LIMIT_META } from '../../types/saas';
 import type { FeatureKey, LimitKey, SaasPlan, Workspace } from '../../types/saas';
 
@@ -43,7 +44,8 @@ export default function AdminWorkspaces() {
   const [plans, setPlans] = useState<SaasPlan[]>([]);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Workspace>>({});
-  const [tab, setTab] = useState<'dados' | 'plano' | 'ajustes'>('dados');
+  const [tab, setTab] = useState<'dados' | 'plano' | 'credenciais' | 'ajustes'>('dados');
+  const [uazTest, setUazTest] = useState<{ loading: boolean; msg: string; ok: boolean } | null>(null);
   const [delId, setDelId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -211,6 +213,7 @@ export default function AdminWorkspaces() {
           {([
             ['dados', 'Dados', 'ti ti-building'],
             ['plano', 'Plano e assinatura', 'ti ti-package'],
+            ['credenciais', 'Credenciais', 'ti ti-key'],
             ['ajustes', 'Ajustes individuais', 'ti ti-adjustments'],
           ] as const).map(([k, label, icon]) => (
             <button key={k} className={`modal-tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>
@@ -294,6 +297,64 @@ export default function AdminWorkspaces() {
             </div>
           </div>
         )}
+
+        {tab === 'credenciais' && (() => {
+          const uazCfg = (draft.integrations || {}).uazapi || { serverUrl: '', adminToken: '', instancePrefix: '' };
+          const setUaz = (patch: any) =>
+            setDraft({ ...draft, integrations: { ...(draft.integrations || {}), uazapi: { ...uazCfg, ...patch } } });
+          const testar = async () => {
+            if (!uazCfg.serverUrl || !uazCfg.adminToken) {
+              setUazTest({ loading: false, ok: false, msg: 'Preencha o servidor e o admin token.' });
+              return;
+            }
+            setUazTest({ loading: true, ok: false, msg: 'Testando conexao...' });
+            const r = await uaz.testAdminCreds({ serverUrl: uazCfg.serverUrl, adminToken: uazCfg.adminToken });
+            setUazTest(
+              r.ok
+                ? { loading: false, ok: true, msg: `Conectado. ${r.count ?? 0} instancia(s) neste servidor.` }
+                : { loading: false, ok: false, msg: r.error || 'Falha ao conectar.' },
+            );
+          };
+          return (
+            <div>
+              <div className="cred-provider-head">
+                <i className="ti ti-brand-whatsapp" style={{ color: '#12b886' }} />
+                <div>
+                  <strong>UAZAPI - WhatsApp</strong>
+                  <p className="text-xs text-muted">Credenciais exclusivas deste workspace. Cada cliente usa o proprio servidor e admin token.</p>
+                </div>
+              </div>
+              <div className="form-grid-2">
+                <div className="form-group span-2">
+                  <label>Servidor da uazapi *</label>
+                  <input className="form-control" value={uazCfg.serverUrl || ''} placeholder="https://empresa.uazapi.com" onChange={(e) => setUaz({ serverUrl: e.target.value })} />
+                  <p className="text-xs text-muted">Host informado pela uazapi ao contratar (ex.: https://free.uazapi.com para testes).</p>
+                </div>
+                <div className="form-group span-2">
+                  <label>Admin Token *</label>
+                  <input className="form-control" type="password" value={uazCfg.adminToken || ''} placeholder="token administrativo do servidor" onChange={(e) => setUaz({ adminToken: e.target.value })} />
+                  <p className="text-xs text-muted">Enviado no header <code>admintoken</code>. E ele que permite criar instancias para este cliente.</p>
+                </div>
+                <div className="form-group span-2">
+                  <label>Prefixo das instancias</label>
+                  <input className="form-control" value={uazCfg.instancePrefix || ''} placeholder={draft.slug || 'cliente'} onChange={(e) => setUaz({ instancePrefix: e.target.value })} />
+                  <p className="text-xs text-muted">Opcional. Usado para nomear as instancias criadas, ex.: <code>{(uazCfg.instancePrefix || draft.slug || 'cliente')}-vendas</code>.</p>
+                </div>
+                <div className="span-2 flex gap-1 items-center">
+                  <button className="btn btn-light-primary" onClick={testar} disabled={uazTest?.loading}>
+                    <i className="ti ti-plug-connected" /> {uazTest?.loading ? 'Testando...' : 'Testar credenciais'}
+                  </button>
+                  {uazTest && !uazTest.loading && (
+                    <span className={`badge bg-light-${uazTest.ok ? 'success' : 'danger'} text-${uazTest.ok ? 'success' : 'danger'}`}>{uazTest.msg}</span>
+                  )}
+                </div>
+              </div>
+              <div className="alert-note mt-2">
+                <i className="ti ti-info-circle" /> O token de cada instancia e gerado automaticamente quando o cliente cria a conexao em <strong>Conexoes</strong>, e fica guardado junto da conexao.
+              </div>
+            </div>
+          );
+        })()}
 
         {tab === 'ajustes' && (
           <div>

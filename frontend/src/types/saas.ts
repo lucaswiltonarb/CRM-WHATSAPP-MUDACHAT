@@ -3,6 +3,7 @@
 export type ConnectionType =
   | 'whatsapp_official'
   | 'whatsapp_evolution'
+  | 'whatsapp_uazapi'
   | 'whatsapp_twilio'
   | 'instagram'
   | 'facebook'
@@ -11,6 +12,7 @@ export type ConnectionType =
 export const CONNECTION_TYPES: { key: ConnectionType; label: string; icon: string; color: string }[] = [
   { key: 'whatsapp_official', label: 'WhatsApp API Oficial (Meta)', icon: 'ti ti-brand-whatsapp', color: '#075e54' },
   { key: 'whatsapp_evolution', label: 'WhatsApp (Evolution API)', icon: 'ti ti-brand-whatsapp', color: '#25d366' },
+  { key: 'whatsapp_uazapi', label: 'WhatsApp (UAZAPI)', icon: 'ti ti-brand-whatsapp', color: '#12b886' },
   { key: 'whatsapp_twilio', label: 'WhatsApp (Twilio)', icon: 'ti ti-brand-whatsapp', color: '#f22f46' },
   { key: 'instagram', label: 'Instagram', icon: 'ti ti-brand-instagram', color: '#e1306c' },
   { key: 'facebook', label: 'Facebook', icon: 'ti ti-brand-facebook', color: '#1877f2' },
@@ -152,6 +154,19 @@ export const DEFAULT_THEME: WorkspaceTheme = {
   logoUrl: '',
 };
 
+export interface UazapiCredentials {
+  /** host da uazapi do cliente, ex.: https://empresa.uazapi.com */
+  serverUrl: string;
+  /** token administrativo do servidor (cria instancias) */
+  adminToken: string;
+  /** prefixo opcional para o nome das instancias criadas */
+  instancePrefix?: string;
+}
+
+export interface WorkspaceIntegrations {
+  uazapi?: UazapiCredentials;
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -166,6 +181,8 @@ export interface Workspace {
   expiresAt?: string | null;
   notes?: string;
   theme?: Partial<WorkspaceTheme>;
+  /** credenciais de servicos externos, configuradas pelo administrativo geral */
+  integrations?: WorkspaceIntegrations;
   /** overrides pontuais por workspace (tem prioridade sobre o plano) */
   featureOverrides?: Partial<PlanFeatures>;
   limitOverrides?: Partial<PlanLimits>;
