@@ -409,7 +409,8 @@ async def run_flow(automation: dict, inst: dict, ctx: dict):
                 await asyncio.sleep(1)
             await evo_send_text(inst, ctx["number"], out)
             log_event({"instance": ctx["instance"], "channelId": ctx.get("channelId"), "number": ctx["number"],
-                        "name": ctx.get("name", ""), "direction": "out", "text": out})
+                        "name": ctx.get("name", ""), "direction": "out", "text": out,
+                        "platform": ctx.get("platform", "whatsapp")})
             node = next_block(automation, node["id"])
         elif node["type"] == "menu":
             opts = "\n".join(filter(None, str(c.get("menuOptions", "")).split("\n")))
@@ -418,7 +419,8 @@ async def run_flow(automation: dict, inst: dict, ctx: dict):
             if body:
                 await evo_send_text(inst, ctx["number"], body)
                 log_event({"instance": ctx["instance"], "channelId": ctx.get("channelId"), "number": ctx["number"],
-                            "name": ctx.get("name", ""), "direction": "out", "text": body})
+                            "name": ctx.get("name", ""), "direction": "out", "text": body,
+                            "platform": ctx.get("platform", "whatsapp")})
             node = next_block(automation, node["id"])
         elif node["type"] == "wait":
             units = {"seconds": 1, "minutes": 60, "hours": 3600, "days": 86400}

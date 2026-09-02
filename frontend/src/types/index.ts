@@ -433,6 +433,26 @@ export interface AIAgent {
   collectFields?: string[];
   allowedActions?: string[];
   allowedIntegrations?: string[];
+  /* --- configuracao enxuta do agente (v2) --- */
+  responseMode?: 'suggested' | 'auto';
+  serviceType?: string;
+  model?: string;
+  humanize?: { typing: boolean; delay: boolean; waitTyping: boolean };
+  systemPrompt?: string;
+  maxWords?: number;
+  temperature?: number;
+  guidelines?: string;
+  contextMemory?: number;
+  businessHours?: { enabled: boolean; days: number[]; start: string; end: string; offHours: 'ai' | 'silent' };
+  triggers?: {
+    newLead: boolean;
+    keywords: { enabled: boolean; list: string[] };
+    inactiveHours: { enabled: boolean; value: number };
+    operatorSilence: { enabled: boolean; value: number };
+  };
+  filters?: { skipAssigned: boolean; excludedTags: string[] };
+  followUp?: { enabled: boolean; steps: { minutes: number; tone: string }[] };
+  handoff?: { keywords: string[]; maxReplies: number; onFailure: string; message: string };
   trainingStatus: 'pending' | 'training' | 'ready' | 'failed';
   isActive: boolean;
   createdAt: string;
