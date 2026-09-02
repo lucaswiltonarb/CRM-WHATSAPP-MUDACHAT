@@ -116,6 +116,31 @@ def clean_url(u: str) -> str:
 def evo_headers(api_key: str) -> dict:
     return {"Content-Type": "application/json", "apikey": api_key}
 
+def is_instagram_inst(inst: dict) -> bool:
+    return str((inst or {}).get("provider") or "").lower() == "instagram"
+
+async def ig_send_text_inst(inst: dict, number: str, text: str) -> bool:
+    """Envia DM do Instagram a partir de uma automacao."""
+    import httpx
+    ig_user_id = inst.get("igUserId")
+    token = inst.get("accessToken")
+    if not (ig_user_id and token):
+        logger.warning("[ig sendText] instancia sem credenciais")
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            res = await client.post(
+                f"{IG_GRAPH_URL}/v23.0/{ig_user_id}/messages",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"recipient": {"id": str(number)}, "message": {"text": text}},
+            )
+            if not res.is_success:
+                logger.warning(f"[ig sendText] HTTP {res.status_code} {res.text[:200]}")
+            return res.is_success
+    except Exception as e:
+        logger.warning(f"[ig sendText] error {e}")
+        return False
+
 def is_uazapi(inst: dict) -> bool:
     return str((inst or {}).get("provider") or "").lower() == "uazapi"
 
@@ -157,6 +182,8 @@ async def uaz_set_webhook(inst: dict) -> bool:
         return False
 
 async def evo_send_text(inst: dict, number: str, text: str) -> bool:
+    if is_instagram_inst(inst):
+        return await ig_send_text_inst(inst, number, text)
     if is_uazapi(inst):
         return await uaz_send_text(inst, number, text)
     import httpx
@@ -181,6 +208,8 @@ async def evo_send_catalog(inst: dict, number: str, products: list) -> bool:
     return await evo_send_text(inst, number, "\n".join(lines))
 
 async def evo_set_webhook(inst: dict) -> bool:
+    if is_instagram_inst(inst):
+        return True  # o webhook do Instagram e configurado no app da Meta
     if is_uazapi(inst):
         return await uaz_set_webhook(inst)
     import httpx
@@ -205,8 +234,27 @@ async def evo_set_webhook(inst: dict) -> bool:
     return False
 
 # ---------- automation engine ----------
+def ig_account_as_instance(acc: dict) -> dict:
+    """Converte uma conta do Instagram no mesmo formato usado pelo motor de fluxos."""
+    return {
+        "provider": "instagram",
+        "instanceName": f"ig-{acc.get('userId')}",
+        "channelId": acc.get("channelId"),
+        "igUserId": str(acc.get("userId") or ""),
+        "accessToken": acc.get("accessToken") or "",
+        "username": acc.get("username") or "",
+    }
+
+
 def find_instance(instance_name: str) -> Optional[dict]:
-    return next((i for i in db["instances"] if i.get("instanceName") == instance_name), None)
+    found = next((i for i in db["instances"] if i.get("instanceName") == instance_name), None)
+    if found:
+        return found
+    # contas do Instagram tambem executam automacoes
+    for acc in db.get("igAccounts") or []:
+        if f"ig-{acc.get('userId')}" == instance_name:
+            return ig_account_as_instance(acc)
+    return None
 
 def next_block(automation: dict, block_id: str, handle: str = None):
     conns = [c for c in automation.get("connections", []) if c.get("sourceBlockId") == block_id]
@@ -385,20 +433,22 @@ async def run_flow(automation: dict, inst: dict, ctx: dict):
         else:
             node = next_block(automation, node["id"])
 
-async def handle_incoming(instance_name: str, number: str, text: str, name: str):
+async def handle_incoming(instance_name: str, number: str, text: str, name: str, platform: str = "whatsapp"):
     inst = find_instance(instance_name)
     if not inst:
         logger.warning(f"[engine] instancia desconhecida: {instance_name}")
         return
     log_event({"instance": instance_name, "channelId": inst.get("channelId"), "number": number,
-                "name": name or "", "direction": "in", "text": text or ""})
+                "name": name or "", "direction": "in", "text": text or "",
+                "platform": platform})
     active = [a for a in db["automations"]
               if a.get("isActive") and (not a.get("channelId") or a.get("channelId") == inst.get("channelId"))]
     if not active:
         logger.info(f"[engine] nenhuma automacao ativa para {instance_name}")
         return
     ctx = {"number": number, "text": text or "", "name": name or "",
-           "channelId": inst.get("channelId"), "instance": instance_name}
+           "channelId": inst.get("channelId"), "instance": instance_name,
+           "platform": platform}
     for a in active:
         logger.info(f'[engine] executando "{a.get("name")}" para {number}: "{text}"')
         try:
@@ -1411,13 +1461,8 @@ async def ig_webhook_receive(request: Request):
                 continue
 
             username = await ig_lookup_username(sender_id, acc.get("accessToken") or "")
-            log_event({
-                "instance": f"ig-{recipient_id}",
-                "channelId": acc.get("channelId"),
-                "platform": "instagram",
-                "number": sender_id,
-                "name": username or sender_id,
-                "direction": "in",
-                "text": text,
-            })
+            # handle_incoming registra o evento no Atendimento E dispara as automacoes
+            asyncio.create_task(
+                handle_incoming(f"ig-{recipient_id}", sender_id, text, username or sender_id, "instagram")
+            )
     return {"received": True}

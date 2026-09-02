@@ -481,7 +481,10 @@ function StartConfig({ data, update, channels }: { data: any; update: (patch: an
             <select value={data.channelId || ''} onChange={(event) => update({ channelId: event.target.value })}>
               <option value="">Todas as conexões</option>
               {channels
-                .filter((item: any) => item.type === 'whatsapp_evolution' || item.provider === 'evolution_api')
+                .filter((item: any) =>
+                  ['whatsapp_evolution', 'whatsapp_uazapi', 'whatsapp_official', 'instagram'].includes(item.type) ||
+                  item.provider === 'evolution_api',
+                )
                 .map((item: any) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
