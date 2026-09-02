@@ -3,6 +3,7 @@
 // conversation to the top of the Atendimento list.
 
 import { backendUrl } from './backend';
+import { dbKey } from './saas';
 import type { Conversation, Contact, Message, Lead, Funnel } from '../types';
 
 export type InboundEvent = {
@@ -14,6 +15,8 @@ export type InboundEvent = {
   name?: string;
   direction: 'in' | 'out';
   text: string;
+  /** canal de origem do evento; ausente = WhatsApp */
+  platform?: 'whatsapp' | 'instagram';
 };
 
 const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -21,13 +24,13 @@ const onlyDigits = (s: string) => String(s || '').replace(/\D/g, '');
 
 function read<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(`db_${key}`);
+    const raw = localStorage.getItem(dbKey(key));
     if (raw) return JSON.parse(raw) as T;
   } catch { /* ignore */ }
   return fallback;
 }
 function write<T>(key: string, value: T): void {
-  try { localStorage.setItem(`db_${key}`, JSON.stringify(value)); } catch { /* ignore */ }
+  try { localStorage.setItem(dbKey(key), JSON.stringify(value)); } catch { /* ignore */ }
 }
 
 export async function fetchEvents(since: number): Promise<{ now: number; events: InboundEvent[] } | null> {
@@ -53,23 +56,33 @@ export function applyInboundEvents(events: InboundEvent[]): { conversations: Con
     seen.add(ev.id);
     changed = true;
     const now = new Date(ev.ts || Date.now()).toISOString();
+    const isInstagram = ev.platform === 'instagram';
+    const origin = isInstagram ? 'Instagram' : 'WhatsApp';
     const digits = onlyDigits(ev.number);
     const displayPhone = ev.number?.startsWith('+') ? ev.number : `+${digits}`;
+    // no Instagram o identificador e o IGSID, nao um telefone
+    const fallbackName = isInstagram ? (ev.name ? `@${ev.name}` : ev.number) : displayPhone;
 
     // ---- contact (saved into the contacts list) ----
-    let contact = contacts.find((c) => digits.length > 0 && onlyDigits(c.phone || '') === digits);
+    let contact = isInstagram
+      ? contacts.find((c) => String((c.customFields as any)?.igsid || '') === String(ev.number))
+      : contacts.find((c) => digits.length > 0 && onlyDigits(c.phone || '') === digits);
     if (!contact) {
       contact = {
         id: uid(), companyId: 'company-1',
-        name: (ev.name && ev.name.trim()) || displayPhone,
-        phone: displayPhone, origin: 'WhatsApp', channelOrigin: ev.channelId,
-        tags: [], customFields: {}, status: 'active',
+        name: (ev.name && ev.name.trim()) ? (isInstagram ? `@${ev.name.trim()}` : ev.name.trim()) : fallbackName,
+        phone: isInstagram ? '' : displayPhone,
+        origin, channelOrigin: ev.channelId,
+        tags: [], customFields: isInstagram ? { igsid: ev.number } : {}, status: 'active',
         lastInteraction: now, createdAt: now, updatedAt: now,
       } as Contact;
       contacts = [contact, ...contacts];
     } else {
       const next: Contact = { ...contact, lastInteraction: now, updatedAt: now };
-      if (ev.name && ev.name.trim() && next.name === (next.phone || '')) next.name = ev.name.trim();
+      const placeholder = isInstagram ? String(ev.number) : (next.phone || '');
+      if (ev.name && ev.name.trim() && next.name === placeholder) {
+        next.name = isInstagram ? `@${ev.name.trim()}` : ev.name.trim();
+      }
       contact = next;
       contacts = contacts.map((c) => (c.id === next.id ? next : c));
     }
@@ -82,7 +95,7 @@ export function applyInboundEvents(events: InboundEvent[]): { conversations: Con
       conv = {
         id: uid(), companyId: 'company-1', contactId: contact.id, contact,
         channelId: ev.channelId || '', channel, status: 'waiting',
-        tags: [], origin: 'WhatsApp', isFavorite: false, isAI: false,
+        tags: [], origin, isFavorite: false, isAI: false,
         metadata: {}, createdAt: now, updatedAt: now,
       } as Conversation;
       conversations = [conv, ...conversations];
@@ -100,7 +113,7 @@ export function applyInboundEvents(events: InboundEvent[]): { conversations: Con
             const lead: Lead = {
               id: uid(), companyId: 'company-1', funnelId: defaultFunnel.id, stageId: firstStage.id,
               contactId: contact.id, contact, conversationId: conv.id,
-              title: contact.name, origin: 'WhatsApp', value: 0,
+              title: contact.name, origin, value: 0,
               tags: [], status: 'open', activities: [],
               createdAt: now, updatedAt: now,
             } as Lead;

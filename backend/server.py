@@ -45,6 +45,7 @@ def _default_db():
         "funnels": [],
         "classifications": [],
         "leads": [],
+        "igAccounts": [],
     }
 
 def _default_store_settings():
@@ -87,6 +88,8 @@ def ensure_db_shape():
         db["classifications"] = []
     if not isinstance(db.get("leads"), list):
         db["leads"] = []
+    if not isinstance(db.get("igAccounts"), list):
+        db["igAccounts"] = []
 
 ensure_db_shape()
 
@@ -475,6 +478,12 @@ async def sync(request: Request):
         db["instances"] = [i for i in instances if i and i.get("serverUrl") and i.get("apiKey") and i.get("instanceName")]
     if isinstance(automations, list):
         db["automations"] = automations
+    ig_accounts = body.get("igAccounts")
+    if isinstance(ig_accounts, list):
+        db["igAccounts"] = [
+            a for a in ig_accounts
+            if a and a.get("userId") and a.get("accessToken")
+        ]
     if integrations and isinstance(integrations, (dict, list)):
         if isinstance(integrations, list):
             mapped = {}
@@ -1088,6 +1097,7 @@ def ig_config() -> dict:
         "appSecret": os.environ.get("IG_APP_SECRET") or saved.get("appSecret") or "",
         "redirectUri": os.environ.get("IG_REDIRECT_URI") or saved.get("redirectUri") or f"{PUBLIC_URL}/instagram/callback",
         "scopes": saved.get("scopes") or IG_DEFAULT_SCOPES,
+        "verifyToken": os.environ.get("IG_VERIFY_TOKEN") or saved.get("verifyToken") or "",
         "fromEnv": bool(os.environ.get("IG_APP_ID")),
     }
 
@@ -1100,6 +1110,8 @@ async def ig_get_config():
         "appId": cfg["appId"],
         "redirectUri": cfg["redirectUri"],
         "scopes": cfg["scopes"],
+        "verifyToken": cfg["verifyToken"],
+        "webhookUrl": f"{PUBLIC_URL}/instagram/webhook",
         "hasSecret": bool(cfg["appSecret"]),
         "fromEnv": cfg["fromEnv"],
         "configured": bool(cfg["appId"] and cfg["appSecret"]),
@@ -1124,6 +1136,8 @@ async def ig_save_config(request: Request):
         current["appSecret"] = app_secret
     current["redirectUri"] = redirect_uri or current.get("redirectUri", "")
     current["scopes"] = scopes or current.get("scopes", IG_DEFAULT_SCOPES)
+    verify_token = str(body.get("verifyToken") or "").strip()
+    current["verifyToken"] = verify_token or current.get("verifyToken") or os.urandom(12).hex()
 
     integrations["instagram_app"] = current
     db["integrations"] = integrations
@@ -1297,3 +1311,113 @@ async def ig_send_text(request: Request):
         return {"ok": resp.status_code < 400, "status": resp.status_code, "data": data}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+# ------------------------------------------------------------
+# Instagram: webhook de mensagens (entra no Atendimento)
+# ------------------------------------------------------------
+
+# cache de nomes de usuario do Instagram (IGSID -> username)
+IG_NAME_CACHE: dict = {}
+
+
+def find_ig_account(ig_user_id: str) -> Optional[dict]:
+    """Localiza a conta conectada dona da mensagem recebida."""
+    target = str(ig_user_id or "")
+    for acc in db.get("igAccounts") or []:
+        if str(acc.get("userId") or "") == target:
+            return acc
+    return None
+
+
+async def ig_lookup_username(igsid: str, access_token: str) -> str:
+    """Busca o @ do remetente para o Atendimento nao mostrar so o ID."""
+    if not igsid:
+        return ""
+    if igsid in IG_NAME_CACHE:
+        return IG_NAME_CACHE[igsid]
+    import httpx
+    name = ""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                f"{IG_GRAPH_URL}/v23.0/{igsid}",
+                params={"fields": "name,username", "access_token": access_token},
+            )
+            if r.status_code < 400:
+                d = r.json()
+                name = d.get("username") or d.get("name") or ""
+    except Exception as e:
+        logger.info("ig username lookup falhou: %s", e)
+    IG_NAME_CACHE[igsid] = name
+    if len(IG_NAME_CACHE) > 2000:
+        IG_NAME_CACHE.clear()
+    return name
+
+
+@app.get("/api/instagram/webhook")
+async def ig_webhook_verify(request: Request):
+    """Validacao do webhook exigida pela Meta ao cadastrar a URL."""
+    params = request.query_params
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge") or ""
+    expected = ig_config().get("verifyToken") or ""
+    if mode == "subscribe" and expected and token == expected:
+        return Response(content=challenge, media_type="text/plain")
+    return Response(content="forbidden", status_code=403, media_type="text/plain")
+
+
+@app.post("/api/instagram/webhook")
+async def ig_webhook_receive(request: Request):
+    """Recebe DMs do Instagram e publica no fluxo de eventos do Atendimento."""
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"received": True}
+
+    if str(payload.get("object") or "") not in ("instagram", "page"):
+        return {"received": True}
+
+    for entry in payload.get("entry") or []:
+        recipient_hint = str(entry.get("id") or "")
+        for ev in entry.get("messaging") or []:
+            msg = ev.get("message") or {}
+            if msg.get("is_echo"):
+                continue
+            mid = msg.get("mid")
+            if mid and mid in processed:
+                continue
+            if mid:
+                processed.add(mid)
+                if len(processed) > 5000:
+                    processed.clear()
+
+            sender_id = str((ev.get("sender") or {}).get("id") or "")
+            recipient_id = str((ev.get("recipient") or {}).get("id") or "") or recipient_hint
+            text = str(msg.get("text") or "")
+            if not text:
+                # anexos sem texto entram como aviso para o atendente
+                atts = msg.get("attachments") or []
+                if atts:
+                    kinds = ", ".join(str(a.get("type") or "arquivo") for a in atts)
+                    text = f"[anexo recebido: {kinds}]"
+            if not sender_id or not text:
+                continue
+
+            acc = find_ig_account(recipient_id)
+            if not acc:
+                logger.info("instagram: conta %s nao encontrada no sync", recipient_id)
+                continue
+
+            username = await ig_lookup_username(sender_id, acc.get("accessToken") or "")
+            log_event({
+                "instance": f"ig-{recipient_id}",
+                "channelId": acc.get("channelId"),
+                "platform": "instagram",
+                "number": sender_id,
+                "name": username or sender_id,
+                "direction": "in",
+                "text": text,
+            })
+    return {"received": True}

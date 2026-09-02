@@ -11,6 +11,10 @@ export interface InstagramAppConfig {
   appId: string;
   redirectUri: string;
   scopes: string;
+  /** token usado pela Meta para validar a URL do webhook */
+  verifyToken: string;
+  /** URL que recebe as mensagens do Instagram */
+  webhookUrl: string;
   hasSecret: boolean;
   fromEnv: boolean;
 }
@@ -36,6 +40,8 @@ export async function getAppConfig(): Promise<InstagramAppConfig> {
     appId: d.appId || '',
     redirectUri: d.redirectUri || '',
     scopes: d.scopes || '',
+    verifyToken: d.verifyToken || '',
+    webhookUrl: d.webhookUrl || '',
     hasSecret: !!d.hasSecret,
     fromEnv: !!d.fromEnv,
   };
@@ -46,6 +52,7 @@ export async function saveAppConfig(cfg: {
   appSecret?: string;
   redirectUri: string;
   scopes?: string;
+  verifyToken?: string;
 }): Promise<InstagramAppConfig> {
   const res = await fetch(`${backendUrl()}/api/integrations/instagram/config`, {
     method: 'POST',
@@ -58,6 +65,8 @@ export async function saveAppConfig(cfg: {
     appId: d.appId || '',
     redirectUri: d.redirectUri || '',
     scopes: d.scopes || '',
+    verifyToken: d.verifyToken || '',
+    webhookUrl: d.webhookUrl || '',
     hasSecret: !!d.hasSecret,
     fromEnv: !!d.fromEnv,
   };

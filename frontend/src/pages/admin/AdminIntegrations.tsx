@@ -45,7 +45,16 @@ const STEPS: { title: string; body: string[] }[] = [
     ],
   },
   {
-    title: '6. Publique o app',
+    title: '6. Ative o webhook das mensagens',
+    body: [
+      'Ainda em **Instagram > Configuracao da API**, va ate a secao **Webhooks** e clique em "Configurar webhooks".',
+      'Cole a **URL de callback** e o **Token de verificacao** que aparecem ao lado, e clique em Verificar e salvar.',
+      'Assine os campos **messages** e **messaging_postbacks**. Sem isso as DMs nao chegam no Atendimento.',
+      'Em Configuracoes da conta do Instagram, ative **Permitir acesso a mensagens** (Configuracoes > Privacidade > Mensagens > Aplicativos conectados).',
+    ],
+  },
+  {
+    title: '7. Publique o app',
     body: [
       'Enquanto o app estiver em desenvolvimento, so contas de teste conseguem autorizar.',
       'Para atender clientes reais, envie o app para **Analise do app** solicitando as permissoes acima e depois mude o app para o modo **Ativo**.',
@@ -66,6 +75,7 @@ export default function AdminIntegrations() {
   const [appId, setAppId] = useState('');
   const [appSecret, setAppSecret] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
+  const [verifyToken, setVerifyToken] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -75,6 +85,7 @@ export default function AdminIntegrations() {
         setCfg(c);
         setAppId(c.appId);
         setRedirectUri(c.redirectUri);
+        setVerifyToken(c.verifyToken);
       })
       .catch(() => setError('Nao foi possivel falar com o backend. Verifique se a API esta no ar.'));
   }, []);
@@ -86,8 +97,14 @@ export default function AdminIntegrations() {
     }
     setSaving(true);
     try {
-      const c = await ig.saveAppConfig({ appId: appId.trim(), appSecret: appSecret.trim(), redirectUri: redirectUri.trim() });
+      const c = await ig.saveAppConfig({
+        appId: appId.trim(),
+        appSecret: appSecret.trim(),
+        redirectUri: redirectUri.trim(),
+        verifyToken: verifyToken.trim(),
+      });
       setCfg(c);
+      setVerifyToken(c.verifyToken);
       setAppSecret('');
       notify('Credenciais do app salvas');
     } catch {
@@ -186,6 +203,26 @@ export default function AdminIntegrations() {
                     <span key={s} className="plan-chip"><i className="ti ti-shield-check" /> {s.trim()}</span>
                   ))}
                 </div>
+              </div>
+              <div className="form-group span-2">
+                <label>URL de callback do webhook</label>
+                <div className="copy-row">
+                  <input className="form-control" value={cfg.webhookUrl} readOnly />
+                  <button className="btn btn-light-secondary" onClick={() => copy(cfg.webhookUrl)} title="Copiar">
+                    <i className="ti ti-copy" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted">E por aqui que as mensagens do Instagram entram no Atendimento.</p>
+              </div>
+              <div className="form-group span-2">
+                <label>Token de verificacao do webhook</label>
+                <div className="copy-row">
+                  <input className="form-control" value={verifyToken} onChange={(e) => setVerifyToken(e.target.value)} placeholder="gerado automaticamente ao salvar" />
+                  <button className="btn btn-light-secondary" onClick={() => copy(verifyToken)} title="Copiar">
+                    <i className="ti ti-copy" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted">Cole o mesmo valor no campo "Token de verificacao" da Meta. Assine os campos <code>messages</code> e <code>messaging_postbacks</code>.</p>
               </div>
             </div>
 

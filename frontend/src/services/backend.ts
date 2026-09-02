@@ -34,8 +34,16 @@ export type BackendStoreProduct = {
   price: number;
 };
 
+type BackendIgAccount = {
+  channelId: string;
+  userId: string;
+  username: string;
+  accessToken: string;
+};
+
 type BackendSyncPayload = {
   instances: BackendSyncInstance[];
+  igAccounts: BackendIgAccount[];
   automations: unknown[];
   integrations: Record<string, unknown>;
   products: BackendStoreProduct[];
@@ -126,7 +134,16 @@ export async function syncToBackend(): Promise<BackendSyncResponse> {
       instanceName: String(c.credentials?.instanceName || ''),
     }));
 
-  const payload: BackendSyncPayload = { instances, automations, integrations, products };
+  const igAccounts: BackendIgAccount[] = channels
+    .filter((c: any) => c.type === 'instagram' && c.credentials?.accessToken && c.credentials?.userId)
+    .map((c: any) => ({
+      channelId: c.id,
+      userId: String(c.credentials?.userId || ''),
+      username: String(c.credentials?.username || ''),
+      accessToken: String(c.credentials?.accessToken || ''),
+    }));
+
+  const payload: BackendSyncPayload = { instances, igAccounts, automations, integrations, products };
 
   try {
     const res = await fetch(`${backendUrl()}/api/sync`, {

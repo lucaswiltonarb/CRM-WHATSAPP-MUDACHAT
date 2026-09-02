@@ -3,15 +3,40 @@
 
 import type { Conversation, Message } from '../types';
 import * as metaCloud from './meta-cloud';
+import { backendUrl } from './backend';
+import { dbKey } from './saas';
 
 export async function sendWhatsAppText(conv: Conversation, text: string): Promise<Message | null> {
-  const channels = JSON.parse(localStorage.getItem('db_channels') || '[]');
+  const channels = JSON.parse(localStorage.getItem(dbKey('channels')) || '[]');
   const channel = conv.channelId ? channels.find((c: any) => c.id === conv.channelId) : undefined;
   const creds = channel?.credentials;
+  let sent = false;
+
+  // Instagram: responde a DM pelo backend, usando o token da conta conectada
+  if (channel?.type === 'instagram') {
+    const igsid = String((conv.contact as any)?.customFields?.igsid || '');
+    if (!igsid || !creds?.accessToken || !creds?.userId) return null;
+    const res = await fetch(`${backendUrl()}/api/instagram/send-text`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken: creds.accessToken, userId: creds.userId, to: igsid, text }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data?.ok) throw new Error('Falha ao enviar a mensagem no Instagram');
+    const nowIg = new Date().toISOString();
+    return {
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      conversationId: conv.id,
+      senderType: 'user',
+      type: 'text',
+      content: text,
+      isRead: true,
+      createdAt: nowIg,
+    } as Message;
+  }
+
   const number = String(conv.contact?.phone || '').replace(/\D/g, '');
   if (!number) return null;
-
-  let sent = false;
 
   // Meta Cloud API (Official)
   if (channel?.type === 'whatsapp_official' && metaCloud.hasMetaCreds(creds)) {
@@ -51,7 +76,7 @@ export async function sendPixViaMetaCloud(
   conv: Conversation,
   opts: { productName: string; amount: number; pixCopyPaste?: string; invoiceUrl?: string }
 ): Promise<boolean> {
-  const channels = JSON.parse(localStorage.getItem('db_channels') || '[]');
+  const channels = JSON.parse(localStorage.getItem(dbKey('channels')) || '[]');
   const channel = conv.channelId ? channels.find((c: any) => c.id === conv.channelId) : undefined;
   const creds = channel?.credentials;
   if (!channel || channel.type !== 'whatsapp_official' || !metaCloud.hasMetaCreds(creds)) return false;
@@ -62,7 +87,7 @@ export async function sendPixViaMetaCloud(
 
 // Check if channel supports native Meta payments
 export function isMetaOfficialChannel(channelId: string): boolean {
-  const channels = JSON.parse(localStorage.getItem('db_channels') || '[]');
+  const channels = JSON.parse(localStorage.getItem(dbKey('channels')) || '[]');
   const channel = channels.find((c: any) => c.id === channelId);
   return channel?.type === 'whatsapp_official' && metaCloud.hasMetaCreds(channel?.credentials);
 }

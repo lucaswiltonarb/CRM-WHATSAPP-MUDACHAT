@@ -507,7 +507,7 @@ export default function Chat() {
               <div>
                 <div className="fw-600">{sel.contact.name}</div>
                 <div className="text-xs text-muted">
-                  {sel.contact.phone} - {sel.channel?.name}
+                  {sel.contact.phone || sel.contact.name} - {sel.channel?.name}
                 </div>
               </div>
             </div>
@@ -596,7 +596,7 @@ export default function Chat() {
           <div className="info-sections" style={{ padding: '1rem' }}>
             <div className="info-section">
               <span className="info-label">Telefone</span>
-              <span className="info-value">{sel.contact.phone}</span>
+              <span className="info-value">{sel.contact.phone || sel.contact.name}</span>
             </div>
             <div className="info-section">
               <span className="info-label">Canal</span>
