@@ -1,15 +1,33 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
+
+/** Deriva o eyebrow "Grupo · Página" (padrão Proofline) da rota atual. */
+function useEyebrowGroup(): string {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/admin')) return 'Administrativo Geral';
+  if (
+    pathname.startsWith('/settings') || pathname.startsWith('/registers') ||
+    pathname.startsWith('/connections') || pathname.startsWith('/integrations') ||
+    pathname.startsWith('/ai-agents') || pathname.startsWith('/reports') ||
+    pathname.startsWith('/audit')
+  ) return 'Configurações';
+  return 'Principal';
+}
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+  const group = useEyebrowGroup();
   return (
-    <div className="page-header">
-      <div>
-        <h1 className="page-title">{title}</h1>
-        {subtitle && <p className="page-subtitle">{subtitle}</p>}
+    <>
+      <div className="page-eyebrow">{group} · {title}</div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
+          {subtitle && <p className="page-subtitle">{subtitle}</p>}
+        </div>
+        {actions && <div className="page-header-actions">{actions}</div>}
       </div>
-      {actions && <div className="page-header-actions">{actions}</div>}
-    </div>
+    </>
   );
 }
 

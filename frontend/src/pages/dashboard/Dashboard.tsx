@@ -20,11 +20,11 @@ const heatMapMax = (items: Array<{ count: number }>) => Math.max(0, ...items.map
 
 type HeatRange = { from: number; to: number; color: string; name: string };
 
-/* Rampa sequencial derivada do azul do template (#2172DB / #4f8dfd).
+/* Rampa sequencial Proofline (proof-blue #7C91FF).
    Somente HEX: o ApexCharts quebra ao receber rgba() no colorScale. */
 const HEAT_RAMP = {
-  light: { empty: '#eef2f7', levels: ['#dbe9fe', '#aecdfa', '#74a6f4', '#3b82f6', '#1d4ed8'] },
-  dark: { empty: '#1b2740', levels: ['#1e3a8a', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd'] },
+  light: { empty: '#131316', levels: ['#232A4D', '#39466F', '#4F5F9E', '#6577CE', '#7C91FF'] },
+  dark: { empty: '#131316', levels: ['#232A4D', '#39466F', '#4F5F9E', '#6577CE', '#7C91FF'] },
 };
 
 const buildHeatRanges = (max: number, dark: boolean): HeatRange[] => {
@@ -46,6 +46,16 @@ const buildHeatRanges = (max: number, dark: boolean): HeatRange[] => {
 
 const heatColorFor = (value: number, ranges: HeatRange[]) =>
   ranges.find((r) => value >= r.from && value <= r.to)?.color || ranges[0].color;
+
+/* Semântica Proofline: azul=identidade/volume, verde=sucesso, âmbar=pendente, vermelho=falha. */
+const STAT_COLORS = {
+  blue: '124,145,255',
+  green: '114,230,166',
+  amber: '241,199,120',
+  red: '239,125,139',
+  soft: '185,197,255',
+  stone: '168,166,160',
+};
 
 function Stat({ icon, color, value, label }: { icon: string; color: string; value: string | number; label: string }) {
   return (
@@ -117,30 +127,32 @@ export default function Dashboard() {
     return `${userIds.length} usuário(s)`;
   }, [userIds]);
 
+  /* Tema de gráfico Proofline (dark-only) */
   const chartTheme = useMemo(() => ({
-    mode: darkMode ? 'dark' : 'light',
-    text: darkMode ? '#e5e9f0' : '#0f172a',
-    muted: darkMode ? '#94a3b8' : '#64748b',
-    grid: darkMode ? 'rgba(148,163,184,.14)' : 'rgba(148,163,184,.18)',
-    tooltip: darkMode ? 'dark' : 'light',
-    blue: '#4f8dfd',
-    cyan: '#22c1dc',
-    green: '#34d399',
-    amber: '#fbbf24',
-    red: '#fb7185',
-    violet: '#8b5cf6',
-  }), [darkMode]);
+    mode: 'dark' as const,
+    text: '#F6F1E7',
+    muted: '#A8A6A0',
+    grid: 'rgba(246,241,231,.08)',
+    tooltip: 'dark' as const,
+    blue: '#7C91FF',
+    cyan: '#B9C5FF',
+    green: '#72E6A6',
+    amber: '#F1C778',
+    red: '#EF7D8B',
+    violet: '#8CA0FF',
+  }), []);
 
   const axisLabelStyle = useMemo(() => ({
     style: {
       colors: chartTheme.muted,
-      fontSize: '12px',
+      fontSize: '11px',
       fontWeight: 500,
+      fontFamily: 'JetBrains Mono, monospace',
     },
   }), [chartTheme.muted]);
 
   const palette = useMemo(
-    () => [chartTheme.blue, chartTheme.cyan, chartTheme.green, chartTheme.violet, chartTheme.amber, chartTheme.red],
+    () => [chartTheme.blue, chartTheme.green, chartTheme.amber, chartTheme.violet, chartTheme.cyan, chartTheme.red],
     [chartTheme],
   );
 
@@ -155,7 +167,7 @@ export default function Dashboard() {
       animations: { enabled: true, easing: 'easeinout', speed: 500 },
       fontFamily: 'Inter, sans-serif',
     },
-    theme: { mode: chartTheme.mode as 'light' | 'dark' },
+    theme: { mode: chartTheme.mode },
     dataLabels: { enabled: false },
     stroke: { lineCap: 'round' },
     grid: {
@@ -170,7 +182,7 @@ export default function Dashboard() {
       itemMargin: { horizontal: 12, vertical: 6 },
     },
     tooltip: {
-      theme: chartTheme.tooltip as 'light' | 'dark',
+      theme: chartTheme.tooltip,
       marker: { show: false },
       style: { fontSize: '12px' },
     },
@@ -189,7 +201,7 @@ export default function Dashboard() {
       yaxis: { labels: axisLabelStyle },
       plotOptions: {
         bar: {
-          borderRadius: 10,
+          borderRadius: 4,
           borderRadiusApplication: 'end',
           columnWidth: '48%',
         },
@@ -197,7 +209,7 @@ export default function Dashboard() {
       fill: {
         type: 'gradient',
         gradient: {
-          shade: chartTheme.mode,
+          shade: 'dark',
           type: 'vertical',
           opacityFrom: 0.95,
           opacityTo: 0.42,
@@ -220,12 +232,12 @@ export default function Dashboard() {
         labels: axisLabelStyle,
       },
       yaxis: { labels: axisLabelStyle },
-      stroke: { curve: 'smooth', width: [3.5, 2.5] },
+      stroke: { curve: 'smooth', width: [3, 2] },
       fill: {
         type: 'gradient',
         gradient: {
-          shade: chartTheme.mode,
-          opacityFrom: 0.28,
+          shade: 'dark',
+          opacityFrom: 0.22,
           opacityTo: 0.02,
           stops: [0, 100],
         },
@@ -251,7 +263,7 @@ export default function Dashboard() {
             labels: {
               show: true,
               name: { show: true, color: chartTheme.muted, fontSize: '12px' },
-              value: { show: true, color: chartTheme.text, fontSize: '24px', fontWeight: 700 },
+              value: { show: true, color: chartTheme.text, fontSize: '24px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' },
               total: {
                 show: true,
                 label: 'Total',
@@ -279,7 +291,7 @@ export default function Dashboard() {
     yaxis: { labels: axisLabelStyle },
     plotOptions: {
       bar: {
-        borderRadius: 8,
+        borderRadius: 4,
         borderRadiusApplication: 'end',
         columnWidth: '52%',
       },
@@ -294,7 +306,7 @@ export default function Dashboard() {
     chart: { ...baseOptions.chart, type: 'heatmap' },
     colors: [chartTheme.blue],
     // O stroke desenha a "calha" entre as celulas: usa a cor do painel para virar respiro.
-    stroke: { show: true, width: 4, colors: [darkMode ? '#101a2d' : '#ffffff'] },
+    stroke: { show: true, width: 4, colors: ['#111113'] },
     grid: { ...baseOptions.grid, show: false, padding: { left: 4, right: 8, top: 0, bottom: 0 } },
     xaxis: {
       type: 'category',
@@ -305,14 +317,14 @@ export default function Dashboard() {
         ...axisLabelStyle,
         rotate: 0,
         hideOverlappingLabels: true,
-        style: { ...axisLabelStyle.style, fontSize: '11px' },
+        style: { ...axisLabelStyle.style, fontSize: '10px' },
         formatter: (value: string) => (Number(String(value).replace('h', '')) % 2 === 0 ? value : ''),
       },
     },
     yaxis: { labels: { ...axisLabelStyle, style: { ...axisLabelStyle.style, fontWeight: 600 } } },
     legend: { show: false },
     states: {
-      hover: { filter: { type: darkMode ? 'lighten' : 'darken', value: 0.12 } },
+      hover: { filter: { type: 'lighten', value: 0.12 } },
       active: { allowMultipleDataPointsSelection: false, filter: { type: 'none' } },
     },
     tooltip: {
@@ -339,7 +351,7 @@ export default function Dashboard() {
         colorScale: { ranges: heatRanges },
       },
     },
-  } as ApexOptions), [axisLabelStyle, baseOptions, chartTheme.blue, darkMode, heatRanges]);
+  } as ApexOptions), [axisLabelStyle, baseOptions, chartTheme.blue, heatRanges]);
 
   if (!data) return <LoadingState label="Carregando dashboard..." />;
 
@@ -368,7 +380,7 @@ export default function Dashboard() {
   const top3 = ranking.slice(0, 3);
 
   return (
-    <div>
+    <div className="page-shell">
       <PageHeader
         title="Dashboard"
         subtitle="Dados reais com filtros por período, conexão e usuário"
@@ -437,50 +449,55 @@ export default function Dashboard() {
       {tab === 'prod' && (
         <>
           <div className="stat-grid">
-            <Stat icon="ti ti-message-2" color="33,114,219" value={p.totalConversations} label="Total de Atendimentos" />
-            <Stat icon="ti ti-checks" color="52,180,120" value={p.finished} label="Atendimentos Concluídos" />
-            <Stat icon="ti ti-message-exclamation" color="250,172,80" value={p.pendingReply || 0} label="Devendo Resposta" />
-            <Stat icon="ti ti-hourglass-high" color="6,145,169" value={p.customerWaiting || 0} label="Cliente Aguardando" />
-            <Stat icon="ti ti-bolt" color="33,114,219" value={fmtT(p.avgFirstResponse)} label="Tempo médio 1ª resposta" />
-            <Stat icon="ti ti-clock" color="147,51,234" value={fmtT(p.avgHandlingTime)} label="Tempo médio atendimento" />
+            <Stat icon="ti ti-message-2" color={STAT_COLORS.blue} value={p.totalConversations} label="Total de Atendimentos" />
+            <Stat icon="ti ti-checks" color={STAT_COLORS.green} value={p.finished} label="Atendimentos Concluídos" />
+            <Stat icon="ti ti-message-exclamation" color={STAT_COLORS.amber} value={p.pendingReply || 0} label="Devendo Resposta" />
+            <Stat icon="ti ti-hourglass-high" color={STAT_COLORS.red} value={p.customerWaiting || 0} label="Cliente Aguardando" />
+            <Stat icon="ti ti-bolt" color={STAT_COLORS.blue} value={fmtT(p.avgFirstResponse)} label="Tempo médio 1ª resposta" />
+            <Stat icon="ti ti-clock" color={STAT_COLORS.soft} value={fmtT(p.avgHandlingTime)} label="Tempo médio atendimento" />
           </div>
 
-          <div className="dash-grid-2">
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Atendimentos por Dia (IA vs Humano)</h4>
-              <Chart
-                type="bar"
-                height={280}
-                options={stackedBarOptions(byDayHumanAI.map((x) => x.date.slice(5)), [chartTheme.blue, chartTheme.green])}
-                series={[
-                  { name: 'Humano', data: byDayHumanAI.map((x) => x.human) },
-                  { name: 'IA', data: byDayHumanAI.map((x) => x.ai) },
-                ]}
-              />
-            </div>
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Volume por usuário</h4>
-              <Chart type="bar" height={280} options={stackedBarOptions(p.dayLabels || [], palette)} series={byUserStacked} />
-            </div>
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Mapa de calor (dia x hora)</h4>
-              <Chart type="heatmap" height={320} options={heatmapOptions} series={heatSeries} />
-              <div className="heatmap-legend">
-                <span>Menos</span>
-                {heatRanges.map((r) => (
-                  <i key={`${r.from}-${r.to}`} style={{ background: r.color }} title={`${r.name} atendimento(s)`} />
-                ))}
-                <span>Mais</span>
+          {/* Composição Proofline: coluna principal + rail direito */}
+          <div className="page-grid">
+            <div className="page-grid-main">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Atendimentos por Dia (IA vs Humano)</h4>
+                <Chart
+                  type="bar"
+                  height={280}
+                  options={stackedBarOptions(byDayHumanAI.map((x) => x.date.slice(5)), [chartTheme.blue, chartTheme.green])}
+                  series={[
+                    { name: 'Humano', data: byDayHumanAI.map((x) => x.human) },
+                    { name: 'IA', data: byDayHumanAI.map((x) => x.ai) },
+                  ]}
+                />
+              </div>
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Mapa de calor (dia x hora)</h4>
+                <Chart type="heatmap" height={320} options={heatmapOptions} series={heatSeries} />
+                <div className="heatmap-legend">
+                  <span>Menos</span>
+                  {heatRanges.map((r) => (
+                    <i key={`${r.from}-${r.to}`} style={{ background: r.color }} title={`${r.name} atendimento(s)`} />
+                  ))}
+                  <span>Mais</span>
+                </div>
               </div>
             </div>
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Volume por conexão</h4>
-              <Chart
-                type="bar"
-                height={320}
-                options={stackedBarOptions(p.dayLabels || [], [chartTheme.cyan, chartTheme.blue, chartTheme.green, chartTheme.violet, chartTheme.amber, chartTheme.red])}
-                series={byConnectionStacked}
-              />
+            <div className="page-grid-rail">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Volume por usuário</h4>
+                <Chart type="bar" height={240} options={stackedBarOptions(p.dayLabels || [], palette)} series={byUserStacked} />
+              </div>
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Volume por conexão</h4>
+                <Chart
+                  type="bar"
+                  height={240}
+                  options={stackedBarOptions(p.dayLabels || [], [chartTheme.cyan, chartTheme.blue, chartTheme.green, chartTheme.violet, chartTheme.amber, chartTheme.red])}
+                  series={byConnectionStacked}
+                />
+              </div>
             </div>
           </div>
         </>
@@ -489,71 +506,74 @@ export default function Dashboard() {
       {tab === 'sales' && (
         <>
           <div className="stat-grid">
-            <Stat icon="ti ti-shopping-cart" color="33,114,219" value={s.totalSales || s.won} label="Total de vendas" />
-            <Stat icon="ti ti-cash" color="52,180,120" value={fmtR(s.totalValue || s.totalConverted)} label="Valor Total" />
-            <Stat icon="ti ti-percentage" color="147,51,234" value={`${s.conversionRate}%`} label="Taxa de Conversão" />
-            <Stat icon="ti ti-receipt-2" color="250,172,80" value={fmtR(s.avgTicket)} label="Ticket Médio" />
-            <Stat icon="ti ti-user-plus" color="6,145,169" value={s.newLeads || s.leadsGenerated} label="Leads Novos" />
-            <Stat icon="ti ti-repeat" color="239,68,68" value={`${s.recurrence || 0}%`} label="Recorrência" />
+            <Stat icon="ti ti-shopping-cart" color={STAT_COLORS.blue} value={s.totalSales || s.won} label="Total de vendas" />
+            <Stat icon="ti ti-cash" color={STAT_COLORS.green} value={fmtR(s.totalValue || s.totalConverted)} label="Valor Total" />
+            <Stat icon="ti ti-percentage" color={STAT_COLORS.soft} value={`${s.conversionRate}%`} label="Taxa de Conversão" />
+            <Stat icon="ti ti-receipt-2" color={STAT_COLORS.amber} value={fmtR(s.avgTicket)} label="Ticket Médio" />
+            <Stat icon="ti ti-user-plus" color={STAT_COLORS.blue} value={s.newLeads || s.leadsGenerated} label="Leads Novos" />
+            <Stat icon="ti ti-repeat" color={STAT_COLORS.red} value={`${s.recurrence || 0}%`} label="Recorrência" />
           </div>
 
-          <div className="dash-grid-2">
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Funil de Conversão</h4>
-              <Chart
-                type="bar"
-                height={280}
-                {...barChart(
-                  ['Atendimentos', 'Negociações', 'Vendas Fechadas'],
-                  [s.funnel?.totalConversations || 0, s.funnel?.totalNegotiations || 0, s.funnel?.closedSales || 0],
-                  'Quantidade',
-                  chartTheme.violet,
-                )}
-              />
-            </div>
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Comparativo de Período</h4>
-              <Chart type="area" height={280} {...lineChart(s.periodComparison?.categories || [], s.periodComparison?.current || [], s.periodComparison?.previous || [])} />
-            </div>
-          </div>
-
-          <div className="card card-pad mt-2">
-            <h4 className="chart-title">🏆 Ranking de Vendas</h4>
-            <div className="podium-grid">
-              <div className="podium-card">
-                <strong>1º</strong>
-                <span>{top3[0]?.name || '-'}</span>
-                <small>{fmtR(top3[0]?.value || 0)}</small>
+          <div className="page-grid">
+            <div className="page-grid-main">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Comparativo de Período</h4>
+                <Chart type="area" height={280} {...lineChart(s.periodComparison?.categories || [], s.periodComparison?.current || [], s.periodComparison?.previous || [])} />
               </div>
-              <div className="podium-card">
-                <strong>2º</strong>
-                <span>{top3[1]?.name || '-'}</span>
-                <small>{fmtR(top3[1]?.value || 0)}</small>
-              </div>
-              <div className="podium-card">
-                <strong>3º</strong>
-                <span>{top3[2]?.name || '-'}</span>
-                <small>{fmtR(top3[2]?.value || 0)}</small>
+              <div className="card card-pad">
+                <h4 className="chart-title">Ranking de Vendas</h4>
+                <div className="podium-grid">
+                  <div className="podium-card">
+                    <strong>1º</strong>
+                    <span>{top3[0]?.name || '-'}</span>
+                    <small>{fmtR(top3[0]?.value || 0)}</small>
+                  </div>
+                  <div className="podium-card">
+                    <strong>2º</strong>
+                    <span>{top3[1]?.name || '-'}</span>
+                    <small>{fmtR(top3[1]?.value || 0)}</small>
+                  </div>
+                  <div className="podium-card">
+                    <strong>3º</strong>
+                    <span>{top3[2]?.name || '-'}</span>
+                    <small>{fmtR(top3[2]?.value || 0)}</small>
+                  </div>
+                </div>
+                <table className="data-table mt-1">
+                  <thead>
+                    <tr>
+                      <th>Usuário</th>
+                      <th>Qtd. vendas</th>
+                      <th>Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranking.map((r) => (
+                      <tr key={r.userId}>
+                        <td>{r.name}</td>
+                        <td>{r.count}</td>
+                        <td>{fmtR(r.value)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-            <table className="data-table mt-1">
-              <thead>
-                <tr>
-                  <th>Usuário</th>
-                  <th>Qtd. vendas</th>
-                  <th>Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ranking.map((r) => (
-                  <tr key={r.userId}>
-                    <td>{r.name}</td>
-                    <td>{r.count}</td>
-                    <td>{fmtR(r.value)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="page-grid-rail">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Funil de Conversão</h4>
+                <Chart
+                  type="bar"
+                  height={280}
+                  {...barChart(
+                    ['Atendimentos', 'Negociações', 'Vendas Fechadas'],
+                    [s.funnel?.totalConversations || 0, s.funnel?.totalNegotiations || 0, s.funnel?.closedSales || 0],
+                    'Quantidade',
+                    chartTheme.violet,
+                  )}
+                />
+              </div>
+            </div>
           </div>
         </>
       )}
@@ -561,18 +581,22 @@ export default function Dashboard() {
       {tab === 'ads' && (
         <>
           <div className="stat-grid">
-            <Stat icon="ti ti-cash" color="52,180,120" value={fmtR(a.revenueMetaAds || 0)} label="Receita Meta Ads" />
-            <Stat icon="ti ti-user-plus" color="33,114,219" value={a.newAdsLeads || 0} label="Leads Novos Ads" />
-            <Stat icon="ti ti-percentage" color="147,51,234" value={`${a.estimatedROI || 0}%`} label="ROI estimado" />
+            <Stat icon="ti ti-cash" color={STAT_COLORS.green} value={fmtR(a.revenueMetaAds || 0)} label="Receita Meta Ads" />
+            <Stat icon="ti ti-user-plus" color={STAT_COLORS.blue} value={a.newAdsLeads || 0} label="Leads Novos Ads" />
+            <Stat icon="ti ti-percentage" color={STAT_COLORS.soft} value={`${a.estimatedROI || 0}%`} label="ROI estimado" />
           </div>
-          <div className="dash-grid-2">
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Chats por dia</h4>
-              <Chart type="bar" height={280} {...barChart(chatsByDay.map((x) => x.date.slice(5)), chatsByDay.map((x) => x.count), 'Chats')} />
+          <div className="page-grid">
+            <div className="page-grid-main">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Chats por dia</h4>
+                <Chart type="bar" height={280} {...barChart(chatsByDay.map((x) => x.date.slice(5)), chatsByDay.map((x) => x.count), 'Chats')} />
+              </div>
             </div>
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Chats por horário</h4>
-              <Chart type="bar" height={280} {...barChart(chatsByHour.map((x) => `${x.hour}h`), chatsByHour.map((x) => x.count), 'Chats', chartTheme.cyan)} />
+            <div className="page-grid-rail">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Chats por horário</h4>
+                <Chart type="bar" height={280} {...barChart(chatsByHour.map((x) => `${x.hour}h`), chatsByHour.map((x) => x.count), 'Chats', chartTheme.cyan)} />
+              </div>
             </div>
           </div>
         </>
@@ -581,19 +605,23 @@ export default function Dashboard() {
       {tab === 'ai' && (
         <>
           <div className="stat-grid">
-            <Stat icon="ti ti-robot" color="33,114,219" value={data.ai.totalAIConversations} label="Atendimentos por IA" />
-            <Stat icon="ti ti-circle-check" color="52,180,120" value={data.ai.resolvedByAI} label="Resolvidos por IA" />
-            <Stat icon="ti ti-user-up" color="250,172,80" value={data.ai.transferredToHuman} label="Transferidos p/ humano" />
-            <Stat icon="ti ti-percentage" color="147,51,234" value={`${data.ai.autoResolutionRate}%`} label="Resolução automática" />
+            <Stat icon="ti ti-robot" color={STAT_COLORS.blue} value={data.ai.totalAIConversations} label="Atendimentos por IA" />
+            <Stat icon="ti ti-circle-check" color={STAT_COLORS.green} value={data.ai.resolvedByAI} label="Resolvidos por IA" />
+            <Stat icon="ti ti-user-up" color={STAT_COLORS.amber} value={data.ai.transferredToHuman} label="Transferidos p/ humano" />
+            <Stat icon="ti ti-percentage" color={STAT_COLORS.soft} value={`${data.ai.autoResolutionRate}%`} label="Resolução automática" />
           </div>
-          <div className="dash-grid-2">
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Intenções mais acionadas</h4>
-              <Chart type="bar" height={260} {...barChart(data.ai.topIntents.map((x) => x.intent), data.ai.topIntents.map((x) => x.count), 'Acionamentos')} />
+          <div className="page-grid">
+            <div className="page-grid-main">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Intenções mais acionadas</h4>
+                <Chart type="bar" height={260} {...barChart(data.ai.topIntents.map((x) => x.intent), data.ai.topIntents.map((x) => x.count), 'Acionamentos')} />
+              </div>
             </div>
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Resolução IA vs Humano</h4>
-              <Chart type="donut" height={260} {...donutChart(['Resolvido por IA', 'Transferido'], [data.ai.resolvedByAI, data.ai.transferredToHuman])} />
+            <div className="page-grid-rail">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Resolução IA vs Humano</h4>
+                <Chart type="donut" height={260} {...donutChart(['Resolvido por IA', 'Transferido'], [data.ai.resolvedByAI, data.ai.transferredToHuman])} />
+              </div>
             </div>
           </div>
         </>
@@ -602,19 +630,23 @@ export default function Dashboard() {
       {tab === 'analysis' && (
         <>
           <div className="stat-grid">
-            <Stat icon="ti ti-message-search" color="33,114,219" value={data.analysis.analyzedConversations} label="Conversas analisadas" />
-            <Stat icon="ti ti-mood-happy" color="52,180,120" value={`${data.analysis.satisfactionLevel}%`} label="Satisfação" />
-            <Stat icon="ti ti-star" color="250,172,80" value={data.analysis.npsScore ?? '-'} label="NPS" />
-            <Stat icon="ti ti-alert-triangle" color="239,68,68" value={data.analysis.badServiceAlerts} label="Alertas ruins" />
+            <Stat icon="ti ti-message-search" color={STAT_COLORS.blue} value={data.analysis.analyzedConversations} label="Conversas analisadas" />
+            <Stat icon="ti ti-mood-happy" color={STAT_COLORS.green} value={`${data.analysis.satisfactionLevel}%`} label="Satisfação" />
+            <Stat icon="ti ti-star" color={STAT_COLORS.amber} value={data.analysis.npsScore ?? '-'} label="NPS" />
+            <Stat icon="ti ti-alert-triangle" color={STAT_COLORS.red} value={data.analysis.badServiceAlerts} label="Alertas ruins" />
           </div>
-          <div className="dash-grid-2">
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Distribuição de sentimento</h4>
-              <Chart type="donut" height={260} {...donutChart(data.analysis.sentimentDistribution.map((x) => x.sentiment), data.analysis.sentimentDistribution.map((x) => x.count))} />
+          <div className="page-grid">
+            <div className="page-grid-main">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Motivos mais recorrentes</h4>
+                <Chart type="bar" height={260} {...barChart(data.analysis.topReasons.map((x) => x.reason), data.analysis.topReasons.map((x) => x.count), 'Qtd', chartTheme.cyan)} />
+              </div>
             </div>
-            <div className="card card-pad chart-panel">
-              <h4 className="chart-title">Motivos mais recorrentes</h4>
-              <Chart type="bar" height={260} {...barChart(data.analysis.topReasons.map((x) => x.reason), data.analysis.topReasons.map((x) => x.count), 'Qtd', chartTheme.cyan)} />
+            <div className="page-grid-rail">
+              <div className="card card-pad chart-panel">
+                <h4 className="chart-title">Distribuição de sentimento</h4>
+                <Chart type="donut" height={260} {...donutChart(data.analysis.sentimentDistribution.map((x) => x.sentiment), data.analysis.sentimentDistribution.map((x) => x.count))} />
+              </div>
             </div>
           </div>
         </>
