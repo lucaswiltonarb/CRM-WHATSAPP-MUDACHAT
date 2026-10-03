@@ -153,7 +153,7 @@ export default function AdminIntegrations() {
         <div>
           <div className="card">
             <div className="cred-provider-head">
-              <i className="ti ti-brand-instagram" style={{ color: '#e1306c' }} />
+              <i className="ti ti-brand-instagram" style={{ color: 'var(--lf-category-pink)' }} />
               <div>
                 <strong>App do Instagram (global)</strong>
                 <p className="text-xs text-muted">Um unico app da Meta atende todos os clientes. Cada cliente autoriza a propria conta.</p>

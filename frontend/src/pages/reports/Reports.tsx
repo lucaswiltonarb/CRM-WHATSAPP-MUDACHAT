@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cssVar } from '../../lib/themeColor';
 import Chart from 'react-apexcharts';
 import { api } from '../../services/api';
 import { PageHeader } from '../../components/common';
@@ -43,7 +44,7 @@ export default function Reports() {
 
       <div className="card" style={{ padding: '1rem' }}>
         <h3 className="m-0 mb-1">Evolução — {TYPES.find(t => t.id === type)?.label}</h3>
-        <Chart type="area" height={320} series={series} options={{ chart: { toolbar: { show: false } }, dataLabels: { enabled: false }, stroke: { curve: 'smooth', width: 2 }, xaxis: { categories: cats }, colors: ['#5d87ff', '#13deb9'], legend: { position: 'top' }, fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.05 } } }} />
+        <Chart type="area" height={320} series={series} options={{ chart: { toolbar: { show: false } }, dataLabels: { enabled: false }, stroke: { curve: 'smooth', width: 2 }, xaxis: { categories: cats }, colors: [cssVar('--lf-primary'), cssVar('--lf-success')], legend: { position: 'top' }, fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.05 } } }} />
       </div>
 
       <div className="card mt-2"><table className="data-table"><thead><tr><th>Período</th><th>Total</th><th>Concluídos</th><th>Taxa</th></tr></thead>

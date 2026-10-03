@@ -13,7 +13,7 @@ const emptyDraft = (): Partial<SaasPlan> => ({
   price: 0,
   billingPeriod: 'monthly',
   trialDays: 7,
-  color: '#2172DB',
+  color: '#5058CE',
   highlight: false,
   status: 'active',
   limits: saas.allLimits(0),
@@ -250,7 +250,7 @@ export default function AdminPlans() {
             <div className="form-group">
               <label>Cor de identificacao</label>
               <div className="color-row">
-                <input type="color" className="color-input" value={draft.color || '#2172DB'} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
+                <input type="color" className="color-input" value={draft.color || '#5058CE'} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
                 <input className="form-control" value={draft.color || ''} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
               </div>
             </div>

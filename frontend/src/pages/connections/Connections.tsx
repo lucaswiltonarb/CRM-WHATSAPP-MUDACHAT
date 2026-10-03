@@ -14,10 +14,10 @@ const TYPE_META: Record<string, { label: string; icon: string; color: string }> 
   whatsapp_official: { label: 'WhatsApp API Oficial (Meta)', icon: 'ti ti-brand-whatsapp', color: '#075e54' },
   whatsapp_evolution: { label: 'WhatsApp (Evolution API)', icon: 'ti ti-brand-whatsapp', color: '#25d366' },
   whatsapp_uazapi: { label: 'WhatsApp (UAZAPI)', icon: 'ti ti-brand-whatsapp', color: '#12b886' },
-  whatsapp_twilio: { label: 'WhatsApp (Twilio)', icon: 'ti ti-brand-whatsapp', color: '#f22f46' },
-  instagram: { label: 'Instagram', icon: 'ti ti-brand-instagram', color: '#e1306c' },
+  whatsapp_twilio: { label: 'WhatsApp (Twilio)', icon: 'ti ti-brand-whatsapp', color: 'var(--lf-danger)' },
+  instagram: { label: 'Instagram', icon: 'ti ti-brand-instagram', color: 'var(--lf-category-pink)' },
   facebook: { label: 'Facebook', icon: 'ti ti-brand-facebook', color: '#1877f2' },
-  webchat: { label: 'Webchat', icon: 'ti ti-world', color: '#5d87ff' },
+  webchat: { label: 'Webchat', icon: 'ti ti-world', color: 'var(--lf-primary)' },
 };
 
 export default function Connections() {
@@ -323,7 +323,7 @@ export default function Connections() {
           <div className="form-group"><label>WABA ID (WhatsApp Business Account)</label><input value={form.credentials?.wabaId || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, wabaId: e.target.value } })} placeholder="Ex: 987654321098765" /></div>
           <div className="form-group"><label>Verify Token (para webhook)</label><input value={form.credentials?.verifyToken || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, verifyToken: e.target.value } })} placeholder="Token personalizado para validação" /></div>
           <div className="form-group"><label>Catalog ID (para pagamentos nativos)</label><input value={form.credentials?.catalogId || ''} onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, catalogId: e.target.value } })} placeholder="ID do catálogo no Commerce Manager" /></div>
-          <div style={{background:'rgba(33,114,219,.08)',borderRadius:10,padding:'.8rem 1rem',fontSize:'.82rem',color:'#1e40af',marginTop:'.5rem'}}>
+          <div style={{background:'rgb(var(--lf-primary-rgb) / calc(.08 * 100%))',borderRadius:10,padding:'.8rem 1rem',fontSize:'.82rem',color:'#1e40af',marginTop:'.5rem'}}>
             <i className="ti ti-info-circle" style={{marginRight:'.4rem'}} />
             <strong>PIX nativo:</strong> Para cobranças PIX direto no WhatsApp, configure um provedor de pagamento (ex: Cielo) no Commerce Manager da Meta e informe o Catalog ID acima.
           </div>
@@ -368,7 +368,7 @@ export default function Connections() {
       {qrModal && <Modal open onClose={closeQr} title={`Conectar â€” ${qrModal.name}`} size="md">
         <div className="qr-wrap">
           {qrError ? (
-            <div className="alert-note" style={{ background: 'rgba(239,68,68,.12)', color: '#b91c1c' }}>
+            <div className="alert-note" style={{ background: 'rgb(var(--lf-danger-rgb) / calc(.12 * 100%))', color: '#b91c1c' }}>
               <i className="ti ti-alert-triangle" /> {qrError}
             </div>
           ) : qrImg ? (

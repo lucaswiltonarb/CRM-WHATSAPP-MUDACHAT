@@ -44,7 +44,7 @@ export default function LicenseSettings() {
           <div key={l.label} className="card">
             <div className="flex items-center gap-1 mb-1"><i className={l.icon} /> <strong>{l.label}</strong></div>
             <div className="flex justify-between text-sm"><span>{l.used} / {l.limit}</span><span>{usage(l.used, l.limit)}%</span></div>
-            <div className="progress-bar"><div className="progress-fill" style={{ width: `${usage(l.used, l.limit)}%`, background: usage(l.used, l.limit) > 85 ? '#fa896b' : undefined }} /></div>
+            <div className="progress-bar"><div className="progress-fill" style={{ width: `${usage(l.used, l.limit)}%`, background: usage(l.used, l.limit) > 85 ? 'var(--lf-danger)' : undefined }} /></div>
           </div>
         ))}
       </div>

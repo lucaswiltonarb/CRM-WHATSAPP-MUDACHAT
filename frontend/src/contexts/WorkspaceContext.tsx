@@ -92,6 +92,7 @@ const MANAGED_VARS = [
   '--lf-success', '--lf-success-rgb', '--lf-warning', '--lf-warning-rgb',
   '--lf-danger', '--lf-danger-rgb',
   '--lf-surface-rail', '--lf-surface-shell', '--lf-surface-board', '--lf-surface-card',
+  '--lf-surface-subtle', '--lf-surface-hover',
   '--lf-radius-card', '--lf-radius-control', '--lf-radius-panel',
   '--lf-sidebar-text', '--lf-sidebar-text-strong',
 ];
@@ -135,10 +136,23 @@ export function applyTheme(theme: WorkspaceTheme) {
     set(`--lf-${name}-rgb`, triplet(c));
   });
 
-  /* ---- superficies ---- */
-  if (custom(theme.sidebarBg, defaults.sidebarBg)) set('--lf-surface-rail', forMode(theme.sidebarBg, dark, 'surface'));
-  if (custom(theme.headerBg, defaults.headerBg)) set('--lf-surface-shell', forMode(theme.headerBg, dark, 'surface'));
-  if (custom(theme.bodyBg, defaults.bodyBg)) set('--lf-surface-board', forMode(theme.bodyBg, dark, 'surface'));
+  /* ---- superficies ----
+     A pagina inteira usa a cor configurada. O trilho do menu recebe apenas
+     um degrau de contraste a partir dela: mais escuro no tema claro, mais
+     claro no tema escuro — diferenca sutil, nunca a cor invertida. */
+  const pageBg = custom(theme.bodyBg, defaults.bodyBg)
+    ? forMode(theme.bodyBg, dark, 'surface')
+    : (dark ? '#121416' : '#FFFFFF');
+  set('--lf-surface-shell', pageBg);
+  set('--lf-surface-card', dark ? mix(pageBg, '#ffffff', 0.05) : pageBg);
+
+  const railStep = custom(theme.sidebarBg, defaults.sidebarBg)
+    ? forMode(theme.sidebarBg, dark, 'surface')
+    : mix(pageBg, dark ? '#ffffff' : '#000000', 0.06);
+  set('--lf-surface-rail', railStep);
+  set('--lf-surface-board', pageBg);
+  set('--lf-surface-subtle', mix(pageBg, dark ? '#ffffff' : '#000000', 0.035));
+  set('--lf-surface-hover', mix(pageBg, dark ? '#ffffff' : '#000000', 0.09));
 
   /* ---- raio ---- */
   if (typeof theme.radius === 'number' && theme.radius !== defaults.radius) {
@@ -148,10 +162,7 @@ export function applyTheme(theme: WorkspaceTheme) {
   }
 
   /* ---- contraste do trilho lateral ---- */
-  const railBg = custom(theme.sidebarBg, defaults.sidebarBg)
-    ? forMode(theme.sidebarBg, dark, 'surface')
-    : (dark ? '#2A2E31' : '#EEF2F5');
-  const railLight = theme.sidebarMode === 'light' || isLight(railBg);
+  const railLight = isLight(railStep);
   document.body.classList.toggle('sidebar-light', railLight);
 }
 

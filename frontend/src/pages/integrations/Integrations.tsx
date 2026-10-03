@@ -20,12 +20,12 @@ const DEFAULTS: Integ[] = [
   { id: 'google_calendar', name: 'Google Calendar', icon: 'ti ti-calendar', color: '#4285f4', category: 'Calendário', description: 'Sincronize agendamentos e disponibilidade com a agenda da equipe.', connected: false },
   { id: 'stripe', name: 'Stripe', icon: 'ti ti-credit-card', color: '#635bff', category: 'Pagamento', description: 'Receba pagamentos com cartão e acompanhe cobranças recorrentes.', connected: false },
   { id: 'mercadopago', name: 'Mercado Pago', icon: 'ti ti-businessplan', color: '#00b1ea', category: 'Pagamento', description: 'Gere links de pagamento e Pix direto das conversas.', connected: false },
-  { id: 'asaas', name: 'Asaas', icon: 'ti ti-receipt-2', color: '#ec4899', category: 'Pagamento', description: 'Emita boletos e cobranças automáticas para seus clientes.', connected: false },
-  { id: 'docusign', name: 'Assinatura Digital', icon: 'ti ti-signature', color: '#ffb900', category: 'Documentos', description: 'Envie contratos para assinatura eletrônica sem sair do CRM.', connected: false },
+  { id: 'asaas', name: 'Asaas', icon: 'ti ti-receipt-2', color: 'var(--lf-category-pink)', category: 'Pagamento', description: 'Emita boletos e cobranças automáticas para seus clientes.', connected: false },
+  { id: 'docusign', name: 'Assinatura Digital', icon: 'ti ti-signature', color: 'var(--lf-warning)', category: 'Documentos', description: 'Envie contratos para assinatura eletrônica sem sair do CRM.', connected: false },
   { id: 'meta_ads', name: 'Meta Ads', icon: 'ti ti-ad', color: '#1877f2', category: 'ADS', description: 'Capture leads de campanhas do Facebook e Instagram.', connected: false },
   { id: 'google_ads', name: 'Google Ads', icon: 'ti ti-brand-google', color: '#34a853', category: 'ADS', description: 'Importe leads dos formulários e meça conversões.', connected: false },
-  { id: 'webhook_out', name: 'Webhooks de Saída', icon: 'ti ti-webhook', color: '#64748b', category: 'API', description: 'Notifique sistemas externos a cada evento da plataforma.', connected: false },
-  { id: 'rest_api', name: 'API REST Externa', icon: 'ti ti-api', color: '#7c3aed', category: 'API', description: 'Conecte qualquer serviço próprio através de requisições REST.', connected: false },
+  { id: 'webhook_out', name: 'Webhooks de Saída', icon: 'ti ti-webhook', color: 'var(--lf-text-muted)', category: 'API', description: 'Notifique sistemas externos a cada evento da plataforma.', connected: false },
+  { id: 'rest_api', name: 'API REST Externa', icon: 'ti ti-api', color: 'var(--lf-category-violet)', category: 'API', description: 'Conecte qualquer serviço próprio através de requisições REST.', connected: false },
 ];
 
 const HINTS: Record<string, string> = {

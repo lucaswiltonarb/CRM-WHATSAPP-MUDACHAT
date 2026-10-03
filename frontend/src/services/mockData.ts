@@ -35,31 +35,31 @@ export const mockUsers: User[] = [
 ];
 
 export const mockTags: Tag[] = [
-  { id: 'tag-1', companyId: 'company-1', name: 'Novo', color: '#2172DB' },
-  { id: 'tag-2', companyId: 'company-1', name: 'VIP', color: '#FAAC50' },
-  { id: 'tag-3', companyId: 'company-1', name: 'Urgente', color: '#EF4444' },
-  { id: 'tag-4', companyId: 'company-1', name: 'Follow-up', color: '#0691A9' },
-  { id: 'tag-5', companyId: 'company-1', name: 'Promoção', color: '#34B478' },
+  { id: 'tag-1', companyId: 'company-1', name: 'Novo', color: 'var(--lf-primary)' },
+  { id: 'tag-2', companyId: 'company-1', name: 'VIP', color: 'var(--lf-warning)' },
+  { id: 'tag-3', companyId: 'company-1', name: 'Urgente', color: 'var(--lf-danger)' },
+  { id: 'tag-4', companyId: 'company-1', name: 'Follow-up', color: 'var(--lf-info)' },
+  { id: 'tag-5', companyId: 'company-1', name: 'Promoção', color: 'var(--lf-success)' },
   { id: 'tag-6', companyId: 'company-1', name: 'Reclamação', color: '#F15094' },
   { id: 'tag-7', companyId: 'company-1', name: 'Indicação', color: '#9333EA' },
   { id: 'tag-8', companyId: 'company-1', name: 'Retorno', color: '#78736E' },
   { id: 'tag-9', companyId: 'company-1', name: 'Cancelamento', color: '#DC2626' },
-  { id: 'tag-10', companyId: 'company-1', name: 'Potencial', color: '#059669' },
+  { id: 'tag-10', companyId: 'company-1', name: 'Potencial', color: 'var(--lf-success)' },
 ];
 
 export const mockClassifications: Classification[] = [
-  { id: 'class-1', companyId: 'company-1', name: 'Quente', color: '#EF4444' },
-  { id: 'class-2', companyId: 'company-1', name: 'Morno', color: '#FAAC50' },
-  { id: 'class-3', companyId: 'company-1', name: 'Frio', color: '#2172DB' },
-  { id: 'class-4', companyId: 'company-1', name: 'Qualificado', color: '#34B478' },
+  { id: 'class-1', companyId: 'company-1', name: 'Quente', color: 'var(--lf-danger)' },
+  { id: 'class-2', companyId: 'company-1', name: 'Morno', color: 'var(--lf-warning)' },
+  { id: 'class-3', companyId: 'company-1', name: 'Frio', color: 'var(--lf-primary)' },
+  { id: 'class-4', companyId: 'company-1', name: 'Qualificado', color: 'var(--lf-success)' },
   { id: 'class-5', companyId: 'company-1', name: 'Desqualificado', color: '#78736E' },
 ];
 
 export const mockOccurrenceTypes: OccurrenceType[] = [
-  { id: 'occ-1', companyId: 'company-1', name: 'Suporte Técnico', color: '#2172DB', isDeleted: false },
-  { id: 'occ-2', companyId: 'company-1', name: 'Dúvida', color: '#0691A9', isDeleted: false },
-  { id: 'occ-3', companyId: 'company-1', name: 'Reclamação', color: '#EF4444', isDeleted: false },
-  { id: 'occ-4', companyId: 'company-1', name: 'Vendas', color: '#34B478', isDeleted: false },
+  { id: 'occ-1', companyId: 'company-1', name: 'Suporte Técnico', color: 'var(--lf-primary)', isDeleted: false },
+  { id: 'occ-2', companyId: 'company-1', name: 'Dúvida', color: 'var(--lf-info)', isDeleted: false },
+  { id: 'occ-3', companyId: 'company-1', name: 'Reclamação', color: 'var(--lf-danger)', isDeleted: false },
+  { id: 'occ-4', companyId: 'company-1', name: 'Vendas', color: 'var(--lf-success)', isDeleted: false },
   { id: 'occ-5', companyId: 'company-1', name: 'Outros', color: '#78736E', isDeleted: false },
 ];
 
@@ -174,23 +174,23 @@ export const mockFunnels: Funnel[] = [
   {
     id: 'funnel-1', companyId: 'company-1', name: 'Vendas Principal', description: 'Funil comercial principal', isDefault: true, status: 'active', createdAt: '2025-06-01T10:00:00Z',
     stages: [
-      { id: 'stage-1', funnelId: 'funnel-1', name: 'Novo Lead', color: '#2172DB', order: 0 },
-      { id: 'stage-2', funnelId: 'funnel-1', name: 'Qualificação', color: '#0691A9', order: 1 },
-      { id: 'stage-3', funnelId: 'funnel-1', name: 'Proposta', color: '#FAAC50', order: 2 },
+      { id: 'stage-1', funnelId: 'funnel-1', name: 'Novo Lead', color: 'var(--lf-primary)', order: 0 },
+      { id: 'stage-2', funnelId: 'funnel-1', name: 'Qualificação', color: 'var(--lf-info)', order: 1 },
+      { id: 'stage-3', funnelId: 'funnel-1', name: 'Proposta', color: 'var(--lf-warning)', order: 2 },
       { id: 'stage-4', funnelId: 'funnel-1', name: 'Negociação', color: '#9333EA', order: 3 },
       { id: 'stage-5', funnelId: 'funnel-1', name: 'Fechamento', color: '#F15094', order: 4 },
-      { id: 'stage-6', funnelId: 'funnel-1', name: 'Ganho', color: '#34B478', order: 5 },
-      { id: 'stage-7', funnelId: 'funnel-1', name: 'Perdido', color: '#EF4444', order: 6 },
+      { id: 'stage-6', funnelId: 'funnel-1', name: 'Ganho', color: 'var(--lf-success)', order: 5 },
+      { id: 'stage-7', funnelId: 'funnel-1', name: 'Perdido', color: 'var(--lf-danger)', order: 6 },
     ],
   },
   {
     id: 'funnel-2', companyId: 'company-1', name: 'Pós-Venda', description: 'Acompanhamento de clientes', isDefault: false, status: 'active', createdAt: '2025-07-01T10:00:00Z',
     stages: [
-      { id: 'stage-8', funnelId: 'funnel-2', name: 'Onboarding', color: '#2172DB', order: 0 },
-      { id: 'stage-9', funnelId: 'funnel-2', name: 'Implantação', color: '#0691A9', order: 1 },
-      { id: 'stage-10', funnelId: 'funnel-2', name: 'Treinamento', color: '#FAAC50', order: 2 },
+      { id: 'stage-8', funnelId: 'funnel-2', name: 'Onboarding', color: 'var(--lf-primary)', order: 0 },
+      { id: 'stage-9', funnelId: 'funnel-2', name: 'Implantação', color: 'var(--lf-info)', order: 1 },
+      { id: 'stage-10', funnelId: 'funnel-2', name: 'Treinamento', color: 'var(--lf-warning)', order: 2 },
       { id: 'stage-11', funnelId: 'funnel-2', name: 'Acompanhamento', color: '#9333EA', order: 3 },
-      { id: 'stage-12', funnelId: 'funnel-2', name: 'Concluído', color: '#34B478', order: 4 },
+      { id: 'stage-12', funnelId: 'funnel-2', name: 'Concluído', color: 'var(--lf-success)', order: 4 },
     ],
   },
 ];
@@ -236,9 +236,9 @@ export const mockProfessionals: Professional[] = [
 ];
 
 export const mockEventTypes: EventType[] = [
-  { id: 'evt-1', companyId: 'company-1', name: 'Reunião Comercial', duration: 60, color: '#2172DB', status: 'active' },
-  { id: 'evt-2', companyId: 'company-1', name: 'Demonstração', duration: 45, color: '#34B478', status: 'active' },
-  { id: 'evt-3', companyId: 'company-1', name: 'Suporte Técnico', duration: 30, color: '#FAAC50', status: 'active' },
+  { id: 'evt-1', companyId: 'company-1', name: 'Reunião Comercial', duration: 60, color: 'var(--lf-primary)', status: 'active' },
+  { id: 'evt-2', companyId: 'company-1', name: 'Demonstração', duration: 45, color: 'var(--lf-success)', status: 'active' },
+  { id: 'evt-3', companyId: 'company-1', name: 'Suporte Técnico', duration: 30, color: 'var(--lf-warning)', status: 'active' },
   { id: 'evt-4', companyId: 'company-1', name: 'Onboarding', duration: 90, color: '#9333EA', status: 'active' },
 ];
 

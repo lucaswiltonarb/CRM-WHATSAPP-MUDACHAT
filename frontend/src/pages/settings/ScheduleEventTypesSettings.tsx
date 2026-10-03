@@ -4,7 +4,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { api } from '../../services/api';
 import type { EventType } from '../../types';
 
-const COLORS = ['#FF1B8D', '#10B981', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1', '#F97316'];
+const COLORS = ['#FF1B8D', '#10B981', '#3B82F6', 'var(--lf-danger)', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1', '#F97316'];
 
 export default function ScheduleEventTypesSettings() {
   const { notify } = useToast();

@@ -131,19 +131,19 @@ export default function StoreOrderDetails() {
 
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(236,72,153,.12)', color: '#ec4899' }}><i className="ti ti-cash" /></div>
+          <div className="stat-icon" style={{ background: 'rgb(183 36 118 / calc(.12 * 100%))', color: 'var(--lf-category-pink)' }}><i className="ti ti-cash" /></div>
           <div className="stat-info"><span className="stat-value">{fmtR(order.total)}</span><span className="stat-label">Valor final</span></div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(52,180,120,.12)', color: '#34B478' }}><i className="ti ti-checks" /></div>
+          <div className="stat-icon" style={{ background: 'rgb(var(--lf-success-rgb) / calc(.12 * 100%))', color: 'var(--lf-success)' }}><i className="ti ti-checks" /></div>
           <div className="stat-info"><span className="stat-value">{orderStatusLabel(order.status)}</span><span className="stat-label">Status do pedido</span></div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(33,114,219,.12)', color: '#2172DB' }}><i className="ti ti-receipt-2" /></div>
+          <div className="stat-icon" style={{ background: 'rgb(var(--lf-primary-rgb) / calc(.12 * 100%))', color: 'var(--lf-primary)' }}><i className="ti ti-receipt-2" /></div>
           <div className="stat-info"><span className="stat-value">{paymentMethodLabel(order.paymentMethod)}</span><span className="stat-label">Método de pagamento</span></div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(147,51,234,.12)', color: '#9333EA' }}><i className="ti ti-ticket" /></div>
+          <div className="stat-icon" style={{ background: 'rgb(138 34 195 / calc(.12 * 100%))', color: '#9333EA' }}><i className="ti ti-ticket" /></div>
           <div className="stat-info"><span className="stat-value">{order.couponCode || 'Sem cupom'}</span><span className="stat-label">Cupom aplicado</span></div>
         </div>
       </div>

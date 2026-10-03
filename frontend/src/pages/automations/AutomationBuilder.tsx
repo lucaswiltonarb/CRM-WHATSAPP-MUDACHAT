@@ -107,26 +107,26 @@ interface BlockDef {
 }
 
 const BLOCKS: BlockDef[] = [
-  { type: 'message', label: 'Mensagem', icon: 'ti ti-message-2', color: '#5d87ff', desc: 'Envia uma mensagem', category: 'Básicos' },
-  { type: 'condition', label: 'Condição', icon: 'ti ti-git-branch', color: '#ffae1f', desc: 'Ramifica Sim/Não', category: 'Básicos' },
-  { type: 'wait', label: 'Espera', icon: 'ti ti-clock', color: '#539bff', desc: 'Aguarda um tempo', category: 'Básicos' },
-  { type: 'crm_action', label: 'Ações CRM', icon: 'ti ti-layout-kanban', color: '#13deb9', desc: 'Mover/criar lead', category: 'Básicos' },
-  { type: 'tag', label: 'Gerenciar Tags', icon: 'ti ti-tag', color: '#7c3aed', desc: 'Aplica/remove tags', category: 'Avançados' },
-  { type: 'menu', label: 'Menu', icon: 'ti ti-list-numbers', color: '#fa896b', desc: 'Menu de N opções', category: 'Avançados' },
-  { type: 'randomizer', label: 'Randomizador', icon: 'ti ti-arrows-shuffle', color: '#ec4899', desc: 'Caminho aleatório', category: 'Avançados' },
-  { type: 'auto_action', label: 'Ação Automática', icon: 'ti ti-bolt', color: '#f59e0b', desc: 'Executa ação', category: 'Avançados' },
+  { type: 'message', label: 'Mensagem', icon: 'ti ti-message-2', color: 'var(--lf-primary)', desc: 'Envia uma mensagem', category: 'Básicos' },
+  { type: 'condition', label: 'Condição', icon: 'ti ti-git-branch', color: 'var(--lf-warning)', desc: 'Ramifica Sim/Não', category: 'Básicos' },
+  { type: 'wait', label: 'Espera', icon: 'ti ti-clock', color: 'var(--lf-info)', desc: 'Aguarda um tempo', category: 'Básicos' },
+  { type: 'crm_action', label: 'Ações CRM', icon: 'ti ti-layout-kanban', color: 'var(--lf-success)', desc: 'Mover/criar lead', category: 'Básicos' },
+  { type: 'tag', label: 'Gerenciar Tags', icon: 'ti ti-tag', color: 'var(--lf-category-violet)', desc: 'Aplica/remove tags', category: 'Avançados' },
+  { type: 'menu', label: 'Menu', icon: 'ti ti-list-numbers', color: 'var(--lf-danger)', desc: 'Menu de N opções', category: 'Avançados' },
+  { type: 'randomizer', label: 'Randomizador', icon: 'ti ti-arrows-shuffle', color: 'var(--lf-category-pink)', desc: 'Caminho aleatório', category: 'Avançados' },
+  { type: 'auto_action', label: 'Ação Automática', icon: 'ti ti-bolt', color: 'var(--lf-warning)', desc: 'Executa ação', category: 'Avançados' },
   { type: 'ai', label: 'Inteligência IA', icon: 'ti ti-robot', color: '#06b6d4', desc: 'Aciona/pausa IA', category: 'Avançados' },
-  { type: 'webhook', label: 'Webhook', icon: 'ti ti-webhook', color: '#64748b', desc: 'Chamada HTTP', category: 'Avançados' },
-  { type: 'transfer', label: 'Transferir', icon: 'ti ti-user-share', color: '#10b981', desc: 'Transfere atendimento', category: 'Avançados' },
+  { type: 'webhook', label: 'Webhook', icon: 'ti ti-webhook', color: 'var(--lf-text-muted)', desc: 'Chamada HTTP', category: 'Avançados' },
+  { type: 'transfer', label: 'Transferir', icon: 'ti ti-user-share', color: 'var(--lf-success)', desc: 'Transfere atendimento', category: 'Avançados' },
 ];
 
 const DEF = (type: string) =>
-  BLOCKS.find((block) => block.type === type) || ({ type: 'message', label: 'Bloco', icon: 'ti ti-box', color: '#5d87ff', desc: '', category: '' } as BlockDef);
+  BLOCKS.find((block) => block.type === type) || ({ type: 'message', label: 'Bloco', icon: 'ti ti-box', color: 'var(--lf-primary)', desc: '', category: '' } as BlockDef);
 
 function StartNode({ data }: NodeProps) {
   return (
     <div className="wf-node wf-start">
-      <div className="wf-node-head" style={{ background: '#13deb9' }}>
+      <div className="wf-node-head" style={{ background: 'var(--lf-success)' }}>
         <i className="ti ti-player-play-filled" /> Início
       </div>
       <div className="wf-node-body">{data.triggerLabel || TRIGGERS[data.trigger]?.label || 'Quando o lead enviar mensagem'}</div>
@@ -370,8 +370,8 @@ function Inner() {
             onConnect={onConnect}
             onNodeClick={(_, node) => setSelectedId(node.id)}
             onPaneClick={() => setSelectedId(null)}
-            defaultEdgeOptions={{ animated: true, type: 'smoothstep', style: { stroke: '#ec4899', strokeWidth: 2, strokeDasharray: '6 5' } }}
-            connectionLineStyle={{ stroke: '#ec4899', strokeWidth: 2, strokeDasharray: '6 5' }}
+            defaultEdgeOptions={{ animated: true, type: 'smoothstep', style: { stroke: 'var(--lf-category-pink)', strokeWidth: 2, strokeDasharray: '6 5' } }}
+            connectionLineStyle={{ stroke: 'var(--lf-category-pink)', strokeWidth: 2, strokeDasharray: '6 5' }}
             fitView
             minZoom={0.2}
             maxZoom={2}
@@ -557,7 +557,7 @@ function BlockConfig({ node, update }: { node: Node; update: (patch: any) => voi
             <input value={data.condValue || ''} onChange={(event) => update({ condValue: event.target.value })} placeholder="Ex: orçamento, preço" />
           </div>
           <p className="text-xs text-muted">
-            Conecte as saídas <strong style={{ color: '#13deb9' }}>Sim</strong> e <strong style={{ color: '#fa896b' }}>Não</strong> a blocos diferentes.
+            Conecte as saídas <strong style={{ color: 'var(--lf-success)' }}>Sim</strong> e <strong style={{ color: 'var(--lf-danger)' }}>Não</strong> a blocos diferentes.
           </p>
         </>
       );

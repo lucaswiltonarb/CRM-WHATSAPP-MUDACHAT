@@ -557,3 +557,16 @@ body > .modal-overlay { position: fixed; }
 .metric-box span { font-size: 12px; color: var(--lf-text-muted); }
 .simple-list { list-style: none; margin: 0; padding: 0; }
 .simple-list li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--lf-border); font-size: 13px; }
+
+
+/* ============================================================
+   Estruturas vindas do JSX (eyebrow, grade de pagina)
+   ============================================================ */
+.page-eyebrow {
+  font-size: 12px; line-height: 18px; font-weight: 500;
+  color: var(--lf-text-muted); margin-bottom: 4px;
+}
+.page-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.page-grid-main, .page-grid-rail { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 1199px) { .page-grid { grid-template-columns: 1fr; } }
+.wf-palette-group { margin-bottom: 16px; }

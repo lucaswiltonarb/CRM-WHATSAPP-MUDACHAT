@@ -62,8 +62,10 @@ export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSi
   return (
     <header className="header-main" ref={headerRef}>
       <div className="header-left">
-        <button className="icon-btn header-toggle desktop-only" onClick={onToggleSidebar}><i className="ti ti-menu-2" /></button>
-        <button className="icon-btn header-toggle mobile-only" onClick={onToggleMobile}><i className="ti ti-menu-2" /></button>
+        <button className="icon-btn header-toggle" aria-label="Expandir ou recolher o menu"
+          onClick={() => (window.matchMedia('(max-width: 991px)').matches ? onToggleMobile() : onToggleSidebar())}>
+          <i className="ti ti-menu-2" />
+        </button>
         <div className="header-search">
           <i className="ti ti-search" />
           <input placeholder="Buscar conversas, contatos, leads..." />

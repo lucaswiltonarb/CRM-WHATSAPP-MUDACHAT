@@ -5,7 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import FunnelsSettings from '../settings/FunnelsSettings';
 import ClassificationsSettings from '../settings/ClassificationsSettings';
 
-const COLORS = ['#5d87ff', '#13deb9', '#ffae1f', '#fa896b', '#539bff', '#7c3aed', '#ec4899', '#64748b'];
+const COLORS = ['var(--lf-primary)', 'var(--lf-success)', 'var(--lf-warning)', 'var(--lf-danger)', 'var(--lf-info)', 'var(--lf-category-violet)', 'var(--lf-category-pink)', 'var(--lf-text-muted)'];
 
 function ColorEntityPage({ title, subtitle, icon, apiObj, withDeleted }: { title: string; subtitle: string; icon: string; apiObj: any; withDeleted?: boolean }) {
   const { notify } = useToast();

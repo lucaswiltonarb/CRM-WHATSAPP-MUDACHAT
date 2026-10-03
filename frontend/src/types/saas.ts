@@ -13,10 +13,10 @@ export const CONNECTION_TYPES: { key: ConnectionType; label: string; icon: strin
   { key: 'whatsapp_official', label: 'WhatsApp API Oficial (Meta)', icon: 'ti ti-brand-whatsapp', color: '#075e54' },
   { key: 'whatsapp_evolution', label: 'WhatsApp (Evolution API)', icon: 'ti ti-brand-whatsapp', color: '#25d366' },
   { key: 'whatsapp_uazapi', label: 'WhatsApp (UAZAPI)', icon: 'ti ti-brand-whatsapp', color: '#12b886' },
-  { key: 'whatsapp_twilio', label: 'WhatsApp (Twilio)', icon: 'ti ti-brand-whatsapp', color: '#f22f46' },
-  { key: 'instagram', label: 'Instagram', icon: 'ti ti-brand-instagram', color: '#e1306c' },
+  { key: 'whatsapp_twilio', label: 'WhatsApp (Twilio)', icon: 'ti ti-brand-whatsapp', color: 'var(--lf-danger)' },
+  { key: 'instagram', label: 'Instagram', icon: 'ti ti-brand-instagram', color: 'var(--lf-category-pink)' },
   { key: 'facebook', label: 'Facebook', icon: 'ti ti-brand-facebook', color: '#1877f2' },
-  { key: 'webchat', label: 'Webchat', icon: 'ti ti-world', color: '#5d87ff' },
+  { key: 'webchat', label: 'Webchat', icon: 'ti ti-world', color: 'var(--lf-primary)' },
 ];
 
 export type FeatureKey =

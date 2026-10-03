@@ -12,8 +12,9 @@
   --lf-canvas-end: #CCD4DD;
   --lf-surface-shell: #FFFFFF;
   --lf-surface-card: #FFFFFF;
-  --lf-surface-board: #EEF2F5;
-  --lf-surface-rail: #EEF2F5;
+  --lf-surface-board: var(--lf-surface-shell);
+  /* trilho: um degrau mais escuro que a pagina no claro */
+  --lf-surface-rail: #E7ECF1;
   --lf-surface-subtle: #F6F8FA;
   --lf-surface-hover: #E8EDF1;
 
@@ -114,8 +115,9 @@ body.dark {
   --lf-canvas-end: #4A4F54;
   --lf-surface-shell: #121416;
   --lf-surface-card: #121416;
-  --lf-surface-board: #2A2E31;
-  --lf-surface-rail: #2A2E31;
+  --lf-surface-board: var(--lf-surface-shell);
+  /* trilho: um degrau mais claro que a pagina no escuro */
+  --lf-surface-rail: #1C1F22;
   --lf-surface-subtle: #202426;
   --lf-surface-hover: #343A3F;
 

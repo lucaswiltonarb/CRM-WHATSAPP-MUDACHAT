@@ -141,7 +141,7 @@ export default function AdminWorkspaces() {
             return (
               <div key={w.id} className={`ws-card ${isCurrent ? 'current' : ''}`}>
                 <div className="ws-card-head">
-                  <div className="ws-avatar" style={{ background: planOf(w.planId)?.color || '#2172DB' }}>
+                  <div className="ws-avatar" style={{ background: planOf(w.planId)?.color || 'var(--lf-primary)' }}>
                     {w.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="ws-title">

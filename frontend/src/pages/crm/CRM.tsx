@@ -38,7 +38,7 @@ function LeadCard({ lead, onClick, onDelete }: { lead: Lead; onClick: () => void
       <div className="kanban-card-top">
         <span className="kanban-card-title">{contactName}</span>
         <div className="kanban-card-actions" onClick={(event) => event.stopPropagation()}>
-          {overdue && <i className="ti ti-alert-circle" style={{ color: '#ef4444' }} title="Atrasado" />}
+          {overdue && <i className="ti ti-alert-circle" style={{ color: 'var(--lf-danger)' }} title="Atrasado" />}
           <button className="icon-btn icon-btn-sm" title="Excluir oportunidade" onClick={onDelete}><i className="ti ti-trash" /></button>
         </div>
       </div>
@@ -75,8 +75,8 @@ function Column({
   const [nameValue, setNameValue] = useState(stage.name || '');
   const [descriptionValue, setDescriptionValue] = useState(stage.description || '');
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, opacity: isDragging ? 0.55 : 1 } : undefined;
-  const stageLight = alpha(stage.color || '#2172DB', 0.11);
-  const stageBorder = alpha(stage.color || '#2172DB', 0.32);
+  const stageLight = alpha(stage.color || 'var(--lf-primary)', 0.11);
+  const stageBorder = alpha(stage.color || 'var(--lf-primary)', 0.32);
 
   useEffect(() => {
     setNameValue(stage.name || '');
@@ -208,10 +208,10 @@ export default function CRM() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const defaultStages = [
-    { id: 'stage-neutral', name: 'Lead Neutro', color: '#27c498', order: 1, description: 'Leads que demonstram algum interesse, mas precisam de mais nutrição.' },
+    { id: 'stage-neutral', name: 'Lead Neutro', color: 'var(--lf-success)', order: 1, description: 'Leads que demonstram algum interesse, mas precisam de mais nutrição.' },
     { id: 'stage-cold', name: 'Lead Frio', color: '#60a5fa', order: 2, description: 'Leads com baixa qualificação, sem orçamento ou necessidade imediata.' },
     { id: 'stage-hot', name: 'Lead Quente', color: '#fb7185', order: 3, description: 'Leads qualificados com forte intenção de compra e boa adequação ao produto.' },
-    { id: 'stage-contact', name: 'Contato Inicial', color: '#f59e0b', order: 4, description: 'Primeiro contato para introdução e levantamento de necessidades.' },
+    { id: 'stage-contact', name: 'Contato Inicial', color: 'var(--lf-warning)', order: 4, description: 'Primeiro contato para introdução e levantamento de necessidades.' },
     { id: 'stage-solution', name: 'Apresentação da Solução', color: '#38bdf8', order: 5, description: 'Demonstração detalhada do produto ou serviço para o lead.' },
     { id: 'stage-negotiation', name: 'Proposta e Negociação', color: '#a78bfa', order: 6, description: 'Envio da proposta e discussão de termos e valores.' },
     { id: 'stage-closing', name: 'Fechamento', color: '#f97316', order: 7, description: 'Momento final de decisão do lead sobre a proposta apresentada.' },
@@ -631,12 +631,12 @@ export default function CRM() {
       ) : (
         <div className="flex flex-col gap-2">
           <div className="stat-grid">
-            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgba(33,114,219,.12)', color: '#2172DB' }}><i className="ti ti-headset" /></div><div className="stat-info"><span className="stat-value">{totalConversations}</span><span className="stat-label">Atendimentos</span></div></div>
-            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgba(6,145,169,.12)', color: '#0691A9' }}><i className="ti ti-layout-kanban" /></div><div className="stat-info"><span className="stat-value">{totalNegotiations}</span><span className="stat-label">Negociações</span></div></div>
-            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgba(52,180,120,.12)', color: '#34B478' }}><i className="ti ti-trophy" /></div><div className="stat-info"><span className="stat-value">{closedSales}</span><span className="stat-label">Vendas fechadas</span></div></div>
-            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgba(147,51,234,.12)', color: '#9333EA' }}><i className="ti ti-percentage" /></div><div className="stat-info"><span className="stat-value">{conversionPct}%</span><span className="stat-label">Conversão</span></div></div>
-            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgba(250,172,80,.12)', color: '#FAAC50' }}><i className="ti ti-cash" /></div><div className="stat-info"><span className="stat-value">{fmtR(closedValue)}</span><span className="stat-label">Receita fechada</span></div></div>
-            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgba(236,72,153,.12)', color: '#EC4899' }}><i className="ti ti-receipt-2" /></div><div className="stat-info"><span className="stat-value">{fmtR(avgTicket)}</span><span className="stat-label">Ticket médio</span></div></div>
+            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgb(var(--lf-primary-rgb) / calc(.12 * 100%))', color: 'var(--lf-primary)' }}><i className="ti ti-headset" /></div><div className="stat-info"><span className="stat-value">{totalConversations}</span><span className="stat-label">Atendimentos</span></div></div>
+            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgba(6,145,169,.12)', color: 'var(--lf-info)' }}><i className="ti ti-layout-kanban" /></div><div className="stat-info"><span className="stat-value">{totalNegotiations}</span><span className="stat-label">Negociações</span></div></div>
+            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgb(var(--lf-success-rgb) / calc(.12 * 100%))', color: 'var(--lf-success)' }}><i className="ti ti-trophy" /></div><div className="stat-info"><span className="stat-value">{closedSales}</span><span className="stat-label">Vendas fechadas</span></div></div>
+            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgb(138 34 195 / calc(.12 * 100%))', color: '#9333EA' }}><i className="ti ti-percentage" /></div><div className="stat-info"><span className="stat-value">{conversionPct}%</span><span className="stat-label">Conversão</span></div></div>
+            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgb(var(--lf-warning-rgb) / calc(.12 * 100%))', color: 'var(--lf-warning)' }}><i className="ti ti-cash" /></div><div className="stat-info"><span className="stat-value">{fmtR(closedValue)}</span><span className="stat-label">Receita fechada</span></div></div>
+            <div className="stat-card"><div className="stat-icon" style={{ background: 'rgb(183 36 118 / calc(.12 * 100%))', color: '#EC4899' }}><i className="ti ti-receipt-2" /></div><div className="stat-info"><span className="stat-value">{fmtR(avgTicket)}</span><span className="stat-label">Ticket médio</span></div></div>
           </div>
           <div className="card">
             <div className="card-pad">

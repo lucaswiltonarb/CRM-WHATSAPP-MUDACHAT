@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { cssVar, chartPalette } from '../../lib/themeColor';
 import type { ApexOptions } from 'apexcharts';
 import Chart from 'react-apexcharts';
 import { api } from '../../services/api';
@@ -128,19 +129,23 @@ export default function Dashboard() {
   }, [userIds]);
 
   /* Tema de gráfico Proofline (dark-only) */
-  const chartTheme = useMemo(() => ({
-    mode: 'dark' as const,
-    text: '#F6F1E7',
-    muted: '#A8A6A0',
-    grid: 'rgba(246,241,231,.08)',
-    tooltip: 'dark' as const,
-    blue: '#7C91FF',
-    cyan: '#B9C5FF',
-    green: '#72E6A6',
-    amber: '#F1C778',
-    red: '#EF7D8B',
-    violet: '#8CA0FF',
-  }), []);
+  const chartTheme = useMemo(() => {
+    const p = chartPalette();
+    const dark = document.body.classList.contains('dark');
+    return {
+      mode: (dark ? 'dark' : 'light') as 'dark' | 'light',
+      text: cssVar('--lf-text-body'),
+      muted: p.muted,
+      grid: dark ? 'rgba(255,255,255,.08)' : 'rgba(9,10,11,.08)',
+      tooltip: (dark ? 'dark' : 'light') as 'dark' | 'light',
+      blue: p.primary,
+      cyan: p.info,
+      green: p.success,
+      amber: p.warning,
+      red: p.danger,
+      violet: p.violet,
+    };
+  }, []);
 
   const axisLabelStyle = useMemo(() => ({
     style: {
@@ -306,7 +311,7 @@ export default function Dashboard() {
     chart: { ...baseOptions.chart, type: 'heatmap' },
     colors: [chartTheme.blue],
     // O stroke desenha a "calha" entre as celulas: usa a cor do painel para virar respiro.
-    stroke: { show: true, width: 4, colors: ['#111113'] },
+    stroke: { show: true, width: 4, colors: [cssVar('--lf-surface-card')] },
     grid: { ...baseOptions.grid, show: false, padding: { left: 4, right: 8, top: 0, bottom: 0 } },
     xaxis: {
       type: 'category',

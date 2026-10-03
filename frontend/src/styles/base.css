@@ -53,10 +53,10 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 /* ---------- Rolagem ---------- */
-.app-scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--lf-border) transparent; }
-.app-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
-.app-scroll::-webkit-scrollbar-thumb { background: var(--lf-border); border-radius: var(--lf-radius-pill); }
-.app-scroll::-webkit-scrollbar-track { background: transparent; }
+.app-scroll { overflow-y: auto; }
+/* rolagem sem barra visivel em toda a aplicacao */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 /* ---------- Animacoes (prefixadas, sem duplicata) ---------- */
 @keyframes lf-fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -126,8 +126,9 @@ img { max-width: 100%; height: auto; display: block; }
 .bg-light-info { background: rgb(var(--lf-info-rgb) / 14%); color: var(--lf-info); }
 .bg-light-secondary { background: var(--lf-surface-subtle); color: var(--lf-text-body); }
 
-.desktop-only { display: inline-flex; }
-.mobile-only { display: none; }
+/* !important porque .icon-btn/.btn definem display e vencem por ordem */
+.desktop-only { display: inline-flex !important; }
+.mobile-only { display: none !important; }
 @media (max-width: 991px) {
   .desktop-only { display: none !important; }
   .mobile-only { display: inline-flex !important; }

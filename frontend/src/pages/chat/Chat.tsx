@@ -483,7 +483,7 @@ export default function Chat() {
                 <div className="conv-mid">
                   <div className="conv-top">
                     <span className="conv-name">{c.contact.name}</span>
-                    {c.isFavorite && <i className="ti ti-star-filled" style={{ color: '#FAAC50', fontSize: '.8rem' }} />}
+                    {c.isFavorite && <i className="ti ti-star-filled" style={{ color: 'var(--lf-warning)', fontSize: '.8rem' }} />}
                   </div>
                   <span className="conv-preview">{c.lastMessage?.content || 'Sem mensagens'}</span>
                 </div>
@@ -625,7 +625,7 @@ export default function Chat() {
               ) : (
                 <div className="flex flex-col gap-1" style={{ width: '100%' }}>
                   {visibleNotes.map((n, idx) => (
-                    <div key={`${n.createdAt}-${idx}`} className="text-xs" style={{ background: '#f8fafc', borderRadius: 8, padding: '.45rem .55rem' }}>
+                    <div key={`${n.createdAt}-${idx}`} className="text-xs" style={{ background: 'var(--lf-surface-subtle)', borderRadius: 8, padding: '.45rem .55rem' }}>
                       <div style={{ fontWeight: 600 }}>
                         {n.author || 'Usuario'} - {new Date(n.createdAt).toLocaleString('pt-BR')}
                       </div>

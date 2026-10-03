@@ -105,7 +105,7 @@ function makePlan(partial: Partial<SaasPlan> & { name: string }): SaasPlan {
     price: partial.price ?? 0,
     billingPeriod: partial.billingPeriod || 'monthly',
     trialDays: partial.trialDays ?? 0,
-    color: partial.color || '#2172DB',
+    color: partial.color || 'var(--lf-primary)',
     highlight: partial.highlight ?? false,
     status: partial.status || 'active',
     limits: { ...allLimits(0), ...(partial.limits || {}) },
@@ -123,7 +123,7 @@ const DEFAULT_PLANS: SaasPlan[] = [
     description: 'Para quem esta comecando a operar no WhatsApp.',
     price: 97,
     trialDays: 7,
-    color: '#0691A9',
+    color: 'var(--lf-info)',
     limits: {
       ...allLimits(0),
       users: 2,
@@ -156,7 +156,7 @@ const DEFAULT_PLANS: SaasPlan[] = [
     description: 'Operacao completa com automacoes e IA.',
     price: 297,
     trialDays: 7,
-    color: '#2172DB',
+    color: 'var(--lf-primary)',
     highlight: true,
     limits: {
       ...allLimits(0),

@@ -6,7 +6,7 @@ import { useToast } from '../../contexts/ToastContext';
 
 const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-const COLORS = ['#5d87ff', '#13deb9', '#ffae1f', '#fa896b', '#539bff', '#7c3aed', '#ec4899'];
+const COLORS = ['var(--lf-primary)', 'var(--lf-success)', 'var(--lf-warning)', 'var(--lf-danger)', 'var(--lf-info)', 'var(--lf-category-violet)', 'var(--lf-category-pink)'];
 const STATUS_LABEL: Record<AppointmentStatus, string> = { scheduled: 'Agendado', confirmed: 'Confirmado', cancelled: 'Cancelado', rescheduled: 'Remarcado', completed: 'Concluído', no_show: 'Não compareceu', waiting_confirmation: 'Aguardando confirmação' };
 const STATUS_CLR: Record<AppointmentStatus, string> = { scheduled: 'primary', confirmed: 'success', cancelled: 'danger', rescheduled: 'warning', completed: 'success', no_show: 'danger', waiting_confirmation: 'warning' };
 

@@ -64,10 +64,10 @@ export default function AdminOverview() {
   const maxCount = Math.max(1, ...byPlan.map((b) => b.count));
 
   const cards = [
-    { label: 'Workspaces', value: workspaces.length, icon: 'ti ti-building-store', color: '#2172DB' },
-    { label: 'Ativos', value: stats.byStatus.active || 0, icon: 'ti ti-circle-check', color: '#34B478' },
-    { label: 'Em teste', value: stats.byStatus.trial || 0, icon: 'ti ti-hourglass', color: '#FAAC50' },
-    { label: 'Suspensos', value: (stats.byStatus.suspended || 0) + (stats.byStatus.canceled || 0), icon: 'ti ti-ban', color: '#EF4444' },
+    { label: 'Workspaces', value: workspaces.length, icon: 'ti ti-building-store', color: 'var(--lf-primary)' },
+    { label: 'Ativos', value: stats.byStatus.active || 0, icon: 'ti ti-circle-check', color: 'var(--lf-success)' },
+    { label: 'Em teste', value: stats.byStatus.trial || 0, icon: 'ti ti-hourglass', color: 'var(--lf-warning)' },
+    { label: 'Suspensos', value: (stats.byStatus.suspended || 0) + (stats.byStatus.canceled || 0), icon: 'ti ti-ban', color: 'var(--lf-danger)' },
   ];
 
   return (
@@ -87,7 +87,7 @@ export default function AdminOverview() {
           </div>
         ))}
         <div className="admin-kpi mrr">
-          <div className="admin-kpi-icon" style={{ background: 'rgba(124,58,237,.1)', color: '#7C3AED' }}>
+          <div className="admin-kpi-icon" style={{ background: 'rgb(138 34 195 / calc(.1 * 100%))', color: '#7C3AED' }}>
             <i className="ti ti-cash" />
           </div>
           <div>
