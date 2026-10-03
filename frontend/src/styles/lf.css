@@ -1,0 +1,9 @@
+/* ============================================================
+   LeadFlow — entrada unica de estilos.
+   Ordem explicita. Nenhum outro CSS do app deve ser importado.
+   ============================================================ */
+@import "./tokens.css";
+@import "./base.css";
+@import "./layout.css";
+@import "./components.css";
+@import "./domains.css";

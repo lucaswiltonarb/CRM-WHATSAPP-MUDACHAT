@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
@@ -93,23 +93,49 @@ export function FormSection({ title, description, children, columns = 1 }: { tit
  */
 export function Modal({ open, onClose, title, subtitle, children, footer, size = 'md', className = '' }: { open: boolean; onClose: () => void; title: string; subtitle?: string; children: ReactNode; footer?: ReactNode; size?: 'sm' | 'md' | 'lg' | 'xl'; className?: string }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
     setHost((document.querySelector('.app-main') as HTMLElement) || document.body);
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const opener = document.activeElement as HTMLElement | null;
+
+    const focusables = () =>
+      Array.from(
+        boxRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) || [],
+      ).filter((el) => el.offsetParent !== null);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (!list.length) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+
+    const t = setTimeout(() => (focusables()[0] || boxRef.current)?.focus(), 0);
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('keydown', onKey);
+      opener?.focus?.();
+    };
   }, [open, onClose]);
 
   if (!open || !host) return null;
 
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-box modal-${size} ${className}`.trim()} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div ref={boxRef} tabIndex={-1} className={`modal-box modal-${size} ${className}`.trim()} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="modal-header">
           <div className="modal-heading">
-            <h3>{title}</h3>
+            <h3 id={titleId}>{title}</h3>
             {subtitle && <p className="modal-subtitle">{subtitle}</p>}
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Fechar"><i className="ti ti-x" /></button>

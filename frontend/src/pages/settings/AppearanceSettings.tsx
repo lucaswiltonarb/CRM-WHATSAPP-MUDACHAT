@@ -6,12 +6,12 @@ import { DEFAULT_THEME } from '../../types/saas';
 import type { WorkspaceTheme } from '../../types/saas';
 
 const PRESETS: { name: string; theme: Partial<WorkspaceTheme> }[] = [
-  { name: 'Padrao', theme: { primary: '#2172DB', success: '#34B478', sidebarBg: '#0F1A2E', sidebarMode: 'dark', bodyBg: '#EEF2F5', headerBg: '#FFFFFF' } },
-  { name: 'Esmeralda', theme: { primary: '#059669', success: '#10B981', sidebarBg: '#052E2B', sidebarMode: 'dark', bodyBg: '#ECFDF5', headerBg: '#FFFFFF' } },
-  { name: 'Violeta', theme: { primary: '#7C3AED', success: '#22C55E', sidebarBg: '#1E1B3A', sidebarMode: 'dark', bodyBg: '#F5F3FF', headerBg: '#FFFFFF' } },
-  { name: 'Coral', theme: { primary: '#F43F5E', success: '#34B478', sidebarBg: '#2B1220', sidebarMode: 'dark', bodyBg: '#FFF1F2', headerBg: '#FFFFFF' } },
-  { name: 'Ambar', theme: { primary: '#D97706', success: '#65A30D', sidebarBg: '#2A1C08', sidebarMode: 'dark', bodyBg: '#FFFBEB', headerBg: '#FFFFFF' } },
-  { name: 'Grafite claro', theme: { primary: '#0F172A', success: '#34B478', sidebarBg: '#F8FAFC', sidebarMode: 'light', bodyBg: '#F1F5F9', headerBg: '#FFFFFF' } },
+  { name: 'LeadFlow', theme: { primary: '#5058CE', success: '#247D3D', sidebarBg: '#EEF2F5', sidebarMode: 'light', bodyBg: '#EEF2F5', headerBg: '#FFFFFF' } },
+  { name: 'Esmeralda', theme: { primary: '#0F766E', success: '#247D3D', sidebarBg: '#ECFDF5', sidebarMode: 'light', bodyBg: '#ECFDF5', headerBg: '#FFFFFF' } },
+  { name: 'Violeta', theme: { primary: '#6D28D9', success: '#247D3D', sidebarBg: '#F5F3FF', sidebarMode: 'light', bodyBg: '#F5F3FF', headerBg: '#FFFFFF' } },
+  { name: 'Coral', theme: { primary: '#BE3158', success: '#247D3D', sidebarBg: '#FFF1F2', sidebarMode: 'light', bodyBg: '#FFF1F2', headerBg: '#FFFFFF' } },
+  { name: 'Ambar', theme: { primary: '#B45309', success: '#3B7C2C', sidebarBg: '#FFFBEB', sidebarMode: 'light', bodyBg: '#FFFBEB', headerBg: '#FFFFFF' } },
+  { name: 'Grafite', theme: { primary: '#334155', success: '#247D3D', sidebarBg: '#1F2937', sidebarMode: 'dark', bodyBg: '#F1F5F9', headerBg: '#FFFFFF' } },
 ];
 
 function ColorField({ label, hint, value, onChange }: { label: string; hint?: string; value: string; onChange: (v: string) => void }) {

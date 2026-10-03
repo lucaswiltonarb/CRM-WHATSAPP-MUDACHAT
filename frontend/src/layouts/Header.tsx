@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
@@ -17,11 +17,35 @@ export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSi
   const { user, logout } = useAuth();
   const { workspaces, workspace, switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
-  const [dark, setDark] = useState(() => localStorage.getItem('theme-mode') === 'dark');
+  const [dark, setDark] = useState(() => {
+    const saved = localStorage.getItem('theme-mode');
+    if (saved === 'dark' || saved === 'light') return saved === 'dark';
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [wsOpen, setWsOpen] = useState(false);
   const isPlatformOwner = user?.role === 'super_admin';
+
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  // dropdowns fecham por clique externo e Esc — operaveis por teclado e toque
+  useEffect(() => {
+    if (!menuOpen && !notifOpen && !wsOpen) return;
+    const closeAll = () => { setMenuOpen(false); setNotifOpen(false); setWsOpen(false); };
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (!headerRef.current?.contains(e.target as Node)) closeAll();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAll(); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen, notifOpen, wsOpen]);
 
   useEffect(() => {
     document.body.classList.toggle('dark', dark);
@@ -36,7 +60,7 @@ export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSi
   ];
 
   return (
-    <header className="header-main">
+    <header className="header-main" ref={headerRef}>
       <div className="header-left">
         <button className="icon-btn header-toggle desktop-only" onClick={onToggleSidebar}><i className="ti ti-menu-2" /></button>
         <button className="icon-btn header-toggle mobile-only" onClick={onToggleMobile}><i className="ti ti-menu-2" /></button>
@@ -52,7 +76,7 @@ export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSi
               <i className="ti ti-chevron-down desktop-only" />
             </button>
             {wsOpen && (
-              <div className="dropdown-panel ws-panel" onMouseLeave={() => setWsOpen(false)}>
+              <div className="dropdown-panel ws-panel">
                 <div className="dropdown-head"><span>Workspaces</span><span className="badge bg-light-primary text-primary">{workspaces.length}</span></div>
                 <div className="ws-panel-list app-scroll">
                   {workspaces.map((w) => (
@@ -84,7 +108,7 @@ export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSi
             <i className="ti ti-bell" /><span className="notif-badge">{notifications.length}</span>
           </button>
           {notifOpen && (
-            <div className="dropdown-panel notif-panel" onMouseLeave={() => setNotifOpen(false)}>
+            <div className="dropdown-panel notif-panel">
               <div className="dropdown-head"><span>Notificações</span><span className="badge bg-light-primary text-primary">{notifications.length} novas</span></div>
               <div className="notif-list app-scroll">
                 {notifications.map((n) => (
@@ -107,7 +131,7 @@ export default function Header({ onToggleSidebar, onToggleMobile }: { onToggleSi
             <i className="ti ti-chevron-down desktop-only" />
           </button>
           {menuOpen && (
-            <div className="dropdown-panel user-panel" onMouseLeave={() => setMenuOpen(false)}>
+            <div className="dropdown-panel user-panel">
               <button className="dropdown-link" onClick={() => { navigate('/settings/company'); setMenuOpen(false); }}><i className="ti ti-settings" /> Configurações</button>
               {isPlatformOwner && (
                 <button className="dropdown-link" onClick={() => { navigate('/admin'); setMenuOpen(false); }}><i className="ti ti-shield-cog" /> Administrativo Geral</button>

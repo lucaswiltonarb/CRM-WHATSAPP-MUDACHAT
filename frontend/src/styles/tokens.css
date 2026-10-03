@@ -1,0 +1,211 @@
+/* ============================================================
+   LeadFlow — tokens canonicos
+   Unica fonte de valores literais de cor/medida da interface.
+   Nenhum outro arquivo deve conter hex de UI.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- Superficies ---------- */
+  --lf-canvas-start: #F2ECDF;
+  --lf-canvas-end: #CCD4DD;
+  --lf-surface-shell: #FFFFFF;
+  --lf-surface-card: #FFFFFF;
+  --lf-surface-board: #EEF2F5;
+  --lf-surface-rail: #EEF2F5;
+  --lf-surface-subtle: #F6F8FA;
+  --lf-surface-hover: #E8EDF1;
+
+  /* ---------- Texto e traco ---------- */
+  --lf-text-title: #090A0B;
+  --lf-text-body: #343A3F;
+  --lf-text-muted: #64717A;
+  --lf-icon-muted: #8998A1;
+  --lf-border: #E4E9EC;
+  --lf-control-border: #89959E;
+
+  /* ---------- Marca ---------- */
+  --lf-primary: #5158DB;
+  --lf-primary-rgb: 81, 88, 219;
+  --lf-primary-start: #7BA9EF;
+  --lf-primary-end: #6469E9;
+  --lf-primary-solid: #5058CE;
+  --lf-on-primary: #FFFFFF;
+  --lf-primary-soft: rgb(var(--lf-primary-rgb) / 10%);
+  --lf-primary-gradient: linear-gradient(135deg, var(--lf-primary-start), var(--lf-primary-end));
+
+  /* ---------- Semanticos ---------- */
+  --lf-success: #247D3D;
+  --lf-success-rgb: 36, 125, 61;
+  --lf-warning: #8A5B00;
+  --lf-warning-rgb: 138, 91, 0;
+  --lf-danger: #BE3158;
+  --lf-danger-rgb: 190, 49, 88;
+  --lf-info: #176DAD;
+  --lf-info-rgb: 23, 109, 173;
+
+  /* ---------- Categorias ---------- */
+  --lf-category-violet: #8A22C3;
+  --lf-category-turquoise: #397E7A;
+  --lf-category-blue: #176DAD;
+  --lf-category-amber: #946000;
+  --lf-category-pink: #B72476;
+  --lf-category-green: #3B7C2C;
+
+  /* ---------- Etapas (etiqueta preenchida, texto branco) ---------- */
+  --lf-stage-green: linear-gradient(135deg, #398B48, #247D3D);
+  --lf-stage-pink: linear-gradient(135deg, #A23E7C, #892B66);
+  --lf-stage-blue: linear-gradient(135deg, #50798A, #3E6575);
+  --lf-stage-violet: linear-gradient(135deg, #6E68C8, #4C49A8);
+
+  /* ---------- Raios ---------- */
+  --lf-radius-sm: 8px;
+  --lf-radius-control: 12px;
+  --lf-radius-card: 20px;
+  --lf-radius-panel: 28px;
+  --lf-radius-shell: 36px;
+  --lf-radius-pill: 999px;
+
+  /* ---------- Dimensoes ---------- */
+  --lf-sidebar-compact: 76px;
+  --lf-sidebar-slot: 108px;
+  --lf-sidebar-expanded: 248px;
+  --lf-header-height: 84px;
+  --lf-control-height: 40px;
+  --lf-control-height-sm: 32px;
+  --lf-touch-target: 44px;
+
+  /* ---------- Sombra ---------- */
+  --lf-shadow-card: 0 12px 24px rgb(49 70 85 / 8%);
+  --lf-shadow-popover: 0 16px 40px rgb(32 45 56 / 14%);
+  --lf-shadow-modal: 0 24px 64px rgb(18 28 38 / 24%);
+  --lf-shadow-primary: 0 8px 22px rgb(83 98 221 / 28%);
+
+  /* ---------- Movimento ---------- */
+  --lf-duration-fast: 150ms;
+  --lf-duration-base: 220ms;
+  --lf-ease: cubic-bezier(.2, .8, .2, 1);
+
+  /* ---------- Camadas ---------- */
+  --lf-z-header: 20;
+  --lf-z-dropdown: 30;
+  --lf-z-sidebar-backdrop: 40;
+  --lf-z-sidebar: 50;
+  --lf-z-modal: 60;
+  --lf-z-popover: 70;
+  --lf-z-tooltip: 80;
+  --lf-z-toast: 90;
+
+  /* ---------- Tipografia ---------- */
+  --lf-font: "Poppins", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --lf-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ============================================================
+   Modo escuro — derivado dos mesmos papeis.
+   Nenhuma regra `body.dark .classe` deve existir fora daqui.
+   ============================================================ */
+
+body.dark {
+  color-scheme: dark;
+
+  --lf-canvas-start: #343A3F;
+  --lf-canvas-end: #4A4F54;
+  --lf-surface-shell: #121416;
+  --lf-surface-card: #121416;
+  --lf-surface-board: #2A2E31;
+  --lf-surface-rail: #2A2E31;
+  --lf-surface-subtle: #202426;
+  --lf-surface-hover: #343A3F;
+
+  --lf-text-title: #F7F8F9;
+  --lf-text-body: #E0E4E7;
+  --lf-text-muted: #A9B2B8;
+  --lf-icon-muted: #96A4AD;
+  --lf-border: #363C40;
+  --lf-control-border: #7E8B94;
+
+  --lf-primary: #A0A7FF;
+  --lf-primary-rgb: 160, 167, 255;
+  --lf-primary-start: #536FAD;
+  --lf-primary-end: #4149BC;
+  --lf-primary-solid: #5058CE;
+
+  --lf-success: #83DF92;
+  --lf-success-rgb: 131, 223, 146;
+  --lf-warning: #F3CB73;
+  --lf-warning-rgb: 243, 203, 115;
+  --lf-danger: #FF8DA9;
+  --lf-danger-rgb: 255, 141, 169;
+  --lf-info: #7AC4F8;
+  --lf-info-rgb: 122, 196, 248;
+
+  --lf-category-violet: #D39AF5;
+  --lf-category-turquoise: #94D1CB;
+  --lf-category-blue: #7AC4F8;
+  --lf-category-amber: #F3CB73;
+  --lf-category-pink: #F48CC7;
+  --lf-category-green: #9ED98A;
+
+  --lf-shadow-card: 0 10px 24px rgb(0 0 0 / 10%);
+  --lf-shadow-popover: 0 16px 40px rgb(0 0 0 / 28%);
+  --lf-shadow-modal: 0 24px 64px rgb(0 0 0 / 40%);
+}
+
+/* ============================================================
+   Ponte de compatibilidade.
+   Mantem o codigo legado (rgb(var(--primary)) / var(--card-bg))
+   funcionando a partir dos tokens novos. Definida no mesmo
+   escopo dos tokens para a precedencia ser previsivel.
+   ============================================================ */
+
+:root,
+body.dark {
+  --primary: var(--lf-primary-rgb);
+  --secondary: 100, 113, 122;
+  --success: var(--lf-success-rgb);
+  --warning: var(--lf-warning-rgb);
+  --danger: var(--lf-danger-rgb);
+  --info: var(--lf-info-rgb);
+  --dark: 9, 10, 11;
+  --white: 255, 255, 255;
+
+  --primary-hex: var(--lf-primary);
+  --secondary-hex: var(--lf-text-muted);
+  --success-hex: var(--lf-success);
+  --warning-hex: var(--lf-warning);
+  --danger-hex: var(--lf-danger);
+  --info-hex: var(--lf-info);
+
+  --bodybg-color: var(--lf-surface-shell);
+  --light-gray: var(--lf-surface-subtle);
+  --card-bg: var(--lf-surface-card);
+  --header-bg: var(--lf-surface-shell);
+  --border-color: var(--lf-border);
+  --input-bg: var(--lf-surface-subtle);
+  --input-border: var(--lf-control-border);
+  --muted-text: var(--lf-text-muted);
+  --body-text: var(--lf-text-body);
+  --heading-text: var(--lf-text-title);
+
+  --sidebar-bg: var(--lf-surface-rail);
+  --sidebar-hover: var(--lf-surface-hover);
+  --sidebar-active: var(--lf-primary-soft);
+  --sidebar-text: var(--lf-text-muted);
+  --sidebar-text-strong: var(--lf-text-title);
+  --sidebar-text-muted: var(--lf-icon-muted);
+  --sidebar-border: var(--lf-border);
+
+  --app-border-radius: var(--lf-radius-card);
+  --card-shadow: var(--lf-shadow-card);
+  --card-shadow-hover: var(--lf-shadow-popover);
+  --dropdown-shadow: var(--lf-shadow-popover);
+  --theme-fonts: var(--lf-font);
+  --mono-fonts: var(--lf-font-mono);
+  --brand-gradient: var(--lf-primary-gradient);
+  --primary-soft: var(--lf-primary-soft);
+  --transition-fast: var(--lf-duration-fast) var(--lf-ease);
+  --transition-base: var(--lf-duration-base) var(--lf-ease);
+  --transition-slow: 320ms var(--lf-ease);
+}

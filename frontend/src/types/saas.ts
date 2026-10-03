@@ -140,16 +140,16 @@ export interface WorkspaceTheme {
 }
 
 export const DEFAULT_THEME: WorkspaceTheme = {
-  primary: '#2172DB',
-  secondary: '#78736E',
-  success: '#34B478',
-  warning: '#FAAC50',
-  danger: '#EF4444',
-  sidebarBg: '#0F1A2E',
-  sidebarMode: 'dark',
+  primary: '#5058CE',
+  secondary: '#64717A',
+  success: '#247D3D',
+  warning: '#8A5B00',
+  danger: '#BE3158',
+  sidebarBg: '#EEF2F5',
+  sidebarMode: 'light',
   headerBg: '#FFFFFF',
   bodyBg: '#EEF2F5',
-  radius: 12,
+  radius: 20,
   brandName: 'LeadFlow CRM',
   logoUrl: '',
 };

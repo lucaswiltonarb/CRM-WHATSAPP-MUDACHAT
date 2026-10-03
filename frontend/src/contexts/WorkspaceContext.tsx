@@ -26,59 +26,133 @@ interface WorkspaceContextType {
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
-/* ---------- aplicacao do tema em CSS custom properties ---------- */
+/* ------------------------------------------------------------------ *
+ * Cor: utilitarios
+ * ------------------------------------------------------------------ */
 
-function hexToRgbTriplet(hex: string): string {
+function toRgb(hex: string): [number, number, number] {
   const clean = String(hex || '').replace('#', '').trim();
   const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
   const int = parseInt(full || '000000', 16);
-  if (Number.isNaN(int)) return '0, 0, 0';
-  return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
+  if (Number.isNaN(int)) return [0, 0, 0];
+  return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
 }
 
-function rgba(hex: string, alpha: number): string {
-  return `rgba(${hexToRgbTriplet(hex)}, ${alpha})`;
+const triplet = (hex: string) => toRgb(hex).join(', ');
+const toHex = (r: number, g: number, b: number) =>
+  `#${[r, g, b].map((n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0')).join('')}`;
+
+/** luminancia relativa (WCAG) */
+function luminance(hex: string): number {
+  const [r, g, b] = toRgb(hex).map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** luminancia relativa simples para decidir texto claro/escuro */
-function isLight(hex: string): boolean {
-  const [r, g, b] = hexToRgbTriplet(hex).split(',').map((n) => Number(n.trim()));
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6;
+const isLight = (hex: string) => luminance(hex) > 0.45;
+
+/** mistura duas cores; t=0 devolve a, t=1 devolve b */
+function mix(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = toRgb(a);
+  const [r2, g2, b2] = toRgb(b);
+  return toHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
 }
+
+/**
+ * Adapta uma cor escolhida pelo cliente ao modo em uso.
+ * O valor salvo nunca muda; o ajuste acontece so em runtime.
+ */
+function forMode(hex: string, dark: boolean, kind: 'surface' | 'accent'): string {
+  if (!dark) return hex;
+  if (kind === 'surface') {
+    // superficie clara personalizada vira uma versao escura equivalente
+    return isLight(hex) ? mix(hex, '#101214', 0.9) : hex;
+  }
+  // acentos escuros demais ficam ilegiveis sobre fundo escuro
+  return luminance(hex) < 0.22 ? mix(hex, '#ffffff', 0.45) : hex;
+}
+
+/** par de gradiente derivado da cor configurada */
+function gradientPair(primary: string, dark: boolean): [string, string] {
+  const start = dark ? mix(primary, '#000000', 0.25) : mix(primary, '#ffffff', 0.28);
+  const end = dark ? mix(primary, '#000000', 0.42) : mix(primary, '#000000', 0.08);
+  return [start, end];
+}
+
+/* ------------------------------------------------------------------ *
+ * Aplicacao do tema
+ * ------------------------------------------------------------------ */
+
+/** variaveis inline escritas por applyTheme — limpas antes de cada aplicacao */
+const MANAGED_VARS = [
+  '--lf-primary', '--lf-primary-rgb', '--lf-primary-start', '--lf-primary-end',
+  '--lf-primary-solid', '--lf-primary-soft', '--lf-primary-gradient', '--lf-on-primary',
+  '--lf-success', '--lf-success-rgb', '--lf-warning', '--lf-warning-rgb',
+  '--lf-danger', '--lf-danger-rgb',
+  '--lf-surface-rail', '--lf-surface-shell', '--lf-surface-board', '--lf-surface-card',
+  '--lf-radius-card', '--lf-radius-control', '--lf-radius-panel',
+  '--lf-sidebar-text', '--lf-sidebar-text-strong',
+];
 
 export function applyTheme(theme: WorkspaceTheme) {
   const root = document.documentElement;
+  const dark = document.body.classList.contains('dark');
+
+  // nao vazar cores entre workspaces: remove o que foi escrito antes
+  MANAGED_VARS.forEach((v) => root.style.removeProperty(v));
+
   const set = (k: string, v: string) => root.style.setProperty(k, v);
+  const defaults = DEFAULT_THEME;
+  /** so grava override quando o valor difere do preset */
+  const custom = (value: string, preset: string) => value && value.toLowerCase() !== preset.toLowerCase();
 
-  set('--primary', hexToRgbTriplet(theme.primary));
-  set('--primary-hex', theme.primary);
-  set('--secondary', hexToRgbTriplet(theme.secondary));
-  set('--secondary-hex', theme.secondary);
-  set('--success', hexToRgbTriplet(theme.success));
-  set('--success-hex', theme.success);
-  set('--warning', hexToRgbTriplet(theme.warning));
-  set('--warning-hex', theme.warning);
-  set('--danger', hexToRgbTriplet(theme.danger));
-  set('--danger-hex', theme.danger);
+  /* ---- marca ---- */
+  if (custom(theme.primary, defaults.primary)) {
+    const primary = forMode(theme.primary, dark, 'accent');
+    const [start, end] = gradientPair(theme.primary, dark);
+    set('--lf-primary', primary);
+    set('--lf-primary-rgb', triplet(primary));
+    set('--lf-primary-start', start);
+    set('--lf-primary-end', end);
+    set('--lf-primary-gradient', `linear-gradient(135deg, ${start}, ${end})`);
+    // acao solida precisa de texto branco legivel
+    const solid = luminance(theme.primary) > 0.5 ? mix(theme.primary, '#000000', 0.35) : theme.primary;
+    set('--lf-primary-solid', solid);
+    set('--lf-primary-soft', `rgb(${triplet(primary)} / 10%)`);
+  }
 
-  set('--sidebar-bg', theme.sidebarBg);
-  set('--sidebar-active', rgba(theme.primary, 0.22));
-  set('--sidebar-hover', theme.sidebarMode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)');
-  set('--header-bg', theme.headerBg);
-  set('--bodybg-color', theme.bodyBg);
-  set('--app-border-radius', `${theme.radius}px`);
+  /* ---- semanticos ---- */
+  ([
+    ['success', theme.success, defaults.success],
+    ['warning', theme.warning, defaults.warning],
+    ['danger', theme.danger, defaults.danger],
+  ] as const).forEach(([name, value, preset]) => {
+    if (!custom(value, preset)) return;
+    const c = forMode(value, dark, 'accent');
+    set(`--lf-${name}`, c);
+    set(`--lf-${name}-rgb`, triplet(c));
+  });
 
-  // tokens proprios usados pelo CSS novo
-  set('--brand-gradient', `linear-gradient(135deg, ${theme.primary}, ${theme.success})`);
-  set('--primary-soft', rgba(theme.primary, 0.12));
-  set('--primary-strong', rgba(theme.primary, 0.85));
+  /* ---- superficies ---- */
+  if (custom(theme.sidebarBg, defaults.sidebarBg)) set('--lf-surface-rail', forMode(theme.sidebarBg, dark, 'surface'));
+  if (custom(theme.headerBg, defaults.headerBg)) set('--lf-surface-shell', forMode(theme.headerBg, dark, 'surface'));
+  if (custom(theme.bodyBg, defaults.bodyBg)) set('--lf-surface-board', forMode(theme.bodyBg, dark, 'surface'));
 
-  const lightSidebar = theme.sidebarMode === 'light' || isLight(theme.sidebarBg);
-  set('--sidebar-text', lightSidebar ? '#475569' : '#AAB3C5');
-  set('--sidebar-text-strong', lightSidebar ? '#0F172A' : '#FFFFFF');
-  set('--sidebar-text-muted', lightSidebar ? '#94A3B8' : '#8B95A7');
-  set('--sidebar-border', lightSidebar ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.06)');
-  document.body.classList.toggle('sidebar-light', lightSidebar);
+  /* ---- raio ---- */
+  if (typeof theme.radius === 'number' && theme.radius !== defaults.radius) {
+    set('--lf-radius-card', `${theme.radius}px`);
+    set('--lf-radius-control', `${Math.min(theme.radius, 12)}px`);
+    set('--lf-radius-panel', `${theme.radius + 8}px`);
+  }
+
+  /* ---- contraste do trilho lateral ---- */
+  const railBg = custom(theme.sidebarBg, defaults.sidebarBg)
+    ? forMode(theme.sidebarBg, dark, 'surface')
+    : (dark ? '#2A2E31' : '#EEF2F5');
+  const railLight = theme.sidebarMode === 'light' || isLight(railBg);
+  document.body.classList.toggle('sidebar-light', railLight);
 }
 
 /* ---------------------------- provider ---------------------------- */
@@ -109,6 +183,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     applyTheme(theme);
+    // reaplica quando o modo claro/escuro muda, para recalcular as derivacoes
+    const observer = new MutationObserver(() => applyTheme(theme));
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
   }, [theme]);
 
   const switchWorkspace = useCallback((id: string) => {
