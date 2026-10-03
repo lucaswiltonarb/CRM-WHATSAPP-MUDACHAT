@@ -162,10 +162,10 @@ export default function AppearanceSettings() {
                 <span className="tp-logo" style={{ background: draft.primary }}>
                   {draft.logoUrl ? <img src={draft.logoUrl} alt="" /> : <i className="ti ti-message-chatbot" />}
                 </span>
-                <span className="tp-brand-name" style={{ color: draft.sidebarMode === 'light' ? '#0F172A' : '#FFFFFF' }}>{draft.brandName}</span>
+                <span className="tp-brand-name" style={{ color: draft.sidebarMode === 'light' ? 'var(--lf-text-title)' : '#FFFFFF' }}>{draft.brandName}</span>
               </div>
               {['Dashboard', 'Atendimento', 'CRM'].map((l, i) => (
-                <div key={l} className="tp-nav" style={{ background: i === 0 ? `${draft.primary}33` : 'transparent', color: draft.sidebarMode === 'light' ? (i === 0 ? '#0F172A' : '#475569') : i === 0 ? '#FFFFFF' : '#AAB3C5' }}>
+                <div key={l} className="tp-nav" style={{ background: i === 0 ? `${draft.primary}33` : 'transparent', color: draft.sidebarMode === 'light' ? (i === 0 ? 'var(--lf-text-title)' : '#475569') : i === 0 ? '#FFFFFF' : '#AAB3C5' }}>
                   <span className="tp-dot" style={{ background: i === 0 ? draft.primary : 'currentColor' }} />
                   {l}
                 </div>

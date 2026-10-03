@@ -570,3 +570,20 @@ body > .modal-overlay { position: fixed; }
 .page-grid-main, .page-grid-rail { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 @media (max-width: 1199px) { .page-grid { grid-template-columns: 1fr; } }
 .wf-palette-group { margin-bottom: 16px; }
+
+/* ============================================================
+   Tons — substituem cor inline em icones, avatares e faixas.
+   Uso: className="stat-icon tone-primary"
+   ============================================================ */
+[class*="tone-"] { background: var(--tone-bg); color: var(--tone-fg); }
+.tone-primary  { --tone-fg: var(--lf-primary);           --tone-bg: rgba(var(--lf-primary-rgb), .12); }
+.tone-success  { --tone-fg: var(--lf-success);           --tone-bg: rgba(var(--lf-success-rgb), .14); }
+.tone-warning  { --tone-fg: var(--lf-warning);           --tone-bg: rgba(var(--lf-warning-rgb), .16); }
+.tone-danger   { --tone-fg: var(--lf-danger);            --tone-bg: rgba(var(--lf-danger-rgb), .12); }
+.tone-info     { --tone-fg: var(--lf-info);              --tone-bg: rgba(var(--lf-info-rgb), .14); }
+.tone-violet   { --tone-fg: var(--lf-category-violet);   --tone-bg: rgba(138, 34, 195, .12); }
+.tone-pink     { --tone-fg: var(--lf-category-pink);     --tone-bg: rgba(183, 36, 118, .12); }
+.tone-turquoise{ --tone-fg: var(--lf-category-turquoise);--tone-bg: rgba(57, 126, 122, .14); }
+.tone-neutral  { --tone-fg: var(--lf-text-muted);        --tone-bg: var(--lf-surface-subtle); }
+/* faixa solida (topo do card de plano, avatar de workspace) */
+.tone-solid { background: var(--tone-fg); color: var(--lf-on-primary); }

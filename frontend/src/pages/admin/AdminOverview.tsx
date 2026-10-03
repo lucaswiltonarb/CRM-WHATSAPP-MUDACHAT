@@ -87,7 +87,7 @@ export default function AdminOverview() {
           </div>
         ))}
         <div className="admin-kpi mrr">
-          <div className="admin-kpi-icon" style={{ background: 'rgb(138 34 195 / calc(.1 * 100%))', color: '#7C3AED' }}>
+          <div className="admin-kpi-icon" style={{ background: 'rgba(138, 34, 195, .1)', color: 'var(--lf-category-violet)' }}>
             <i className="ti ti-cash" />
           </div>
           <div>

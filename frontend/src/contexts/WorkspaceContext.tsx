@@ -121,7 +121,7 @@ export function applyTheme(theme: WorkspaceTheme) {
     // acao solida precisa de texto branco legivel
     const solid = luminance(theme.primary) > 0.5 ? mix(theme.primary, '#000000', 0.35) : theme.primary;
     set('--lf-primary-solid', solid);
-    set('--lf-primary-soft', `rgb(${triplet(primary)} / 10%)`);
+    set('--lf-primary-soft', `rgba(${triplet(primary)}, 0.12)`);
   }
 
   /* ---- semanticos ---- */
@@ -146,9 +146,7 @@ export function applyTheme(theme: WorkspaceTheme) {
   set('--lf-surface-shell', pageBg);
   set('--lf-surface-card', dark ? mix(pageBg, '#ffffff', 0.05) : pageBg);
 
-  const railStep = custom(theme.sidebarBg, defaults.sidebarBg)
-    ? forMode(theme.sidebarBg, dark, 'surface')
-    : mix(pageBg, dark ? '#ffffff' : '#000000', 0.06);
+  const railStep = mix(pageBg, dark ? '#ffffff' : '#000000', 0.06);
   set('--lf-surface-rail', railStep);
   set('--lf-surface-board', pageBg);
   set('--lf-surface-subtle', mix(pageBg, dark ? '#ffffff' : '#000000', 0.035));

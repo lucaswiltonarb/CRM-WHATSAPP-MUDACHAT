@@ -318,7 +318,7 @@ export default function AdminWorkspaces() {
           return (
             <div>
               <div className="cred-provider-head">
-                <i className="ti ti-brand-whatsapp" style={{ color: '#12b886' }} />
+                <i className="ti ti-brand-whatsapp" style={{ color: 'var(--lf-success)' }} />
                 <div>
                   <strong>UAZAPI - WhatsApp</strong>
                   <p className="text-xs text-muted">Credenciais exclusivas deste workspace. Cada cliente usa o proprio servidor e admin token.</p>

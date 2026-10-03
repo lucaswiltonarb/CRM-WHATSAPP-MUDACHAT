@@ -238,7 +238,7 @@ export default function Store() {
       plotOptions: { bar: { borderRadius: 8, horizontal: true, barHeight: '55%' } },
       dataLabels: { enabled: false },
       xaxis: { categories: topProducts.map((item) => item.name) },
-      colors: ['#9333EA'],
+      colors: ['var(--lf-category-violet)'],
       grid: { borderColor: 'rgba(148,163,184,.18)' },
     } as ApexOptions,
     series: [{ name: 'Receita', data: topProducts.map((item) => Number(item.value.toFixed(2))) }],
@@ -310,27 +310,27 @@ export default function Store() {
         <>
           <div className="stat-grid">
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: 'rgb(183 36 118 / calc(.12 * 100%))', color: 'var(--lf-category-pink)' }}><i className="ti ti-cash" /></div>
+              <div className="stat-icon" style={{ background: 'rgba(183, 36, 118, .12)', color: 'var(--lf-category-pink)' }}><i className="ti ti-cash" /></div>
               <div className="stat-info"><span className="stat-value">{fmtR(revenuePaid)}</span><span className="stat-label">Receita confirmada</span></div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: 'rgb(var(--lf-primary-rgb) / calc(.12 * 100%))', color: 'var(--lf-primary)' }}><i className="ti ti-shopping-bag" /></div>
+              <div className="stat-icon tone-primary"><i className="ti ti-shopping-bag" /></div>
               <div className="stat-info"><span className="stat-value">{orders.length}</span><span className="stat-label">Pedidos totais</span></div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: 'rgb(var(--lf-warning-rgb) / calc(.12 * 100%))', color: 'var(--lf-warning)' }}><i className="ti ti-hourglass" /></div>
+              <div className="stat-icon tone-warning"><i className="ti ti-hourglass" /></div>
               <div className="stat-info"><span className="stat-value">{pendingOrders}</span><span className="stat-label">Aguardando pagamento</span></div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: 'rgb(var(--lf-success-rgb) / calc(.12 * 100%))', color: 'var(--lf-success)' }}><i className="ti ti-percentage" /></div>
+              <div className="stat-icon tone-success"><i className="ti ti-percentage" /></div>
               <div className="stat-info"><span className="stat-value">{conversion}%</span><span className="stat-label">Conversão</span></div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: 'rgb(138 34 195 / calc(.12 * 100%))', color: '#9333EA' }}><i className="ti ti-package" /></div>
+              <div className="stat-icon" style={{ background: 'rgba(138, 34, 195, .12)', color: 'var(--lf-category-violet)' }}><i className="ti ti-package" /></div>
               <div className="stat-info"><span className="stat-value">{activeProducts}</span><span className="stat-label">Produtos ativos</span></div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: 'rgb(var(--lf-danger-rgb) / calc(.12 * 100%))', color: 'var(--lf-danger)' }}><i className="ti ti-alert-circle" /></div>
+              <div className="stat-icon tone-danger"><i className="ti ti-alert-circle" /></div>
               <div className="stat-info"><span className="stat-value">{lowStockProducts}</span><span className="stat-label">Estoque crítico</span></div>
             </div>
           </div>
