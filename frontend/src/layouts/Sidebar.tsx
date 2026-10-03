@@ -134,6 +134,59 @@ function SidebarItem({ item, collapsed }: { item: NavItem; collapsed: boolean })
   );
 }
 
+/** Card do workspace no topo da sidebar (padrão Proofline: WorkspaceSwitcher). */
+function WorkspaceCard({ collapsed }: { collapsed: boolean }) {
+  const { user } = useAuth();
+  const { workspaces, workspace, switchWorkspace } = useWorkspace();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const isPlatformOwner = user?.role === 'super_admin';
+  const initials = (workspace?.name || 'WS').slice(0, 2).toUpperCase();
+
+  if (collapsed) {
+    return (
+      <div className="ws-card" style={{ justifyContent: 'center', margin: '0 8px 16px', padding: '8px' }} title={workspace?.name}>
+        <div className="ws-card-glyph">{initials}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ws-card" onClick={() => isPlatformOwner && setOpen((o) => !o)}>
+      <div className="ws-card-glyph">{initials}</div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="ws-card-name">{workspace?.name || 'Workspace'}</span>
+          <span className="ws-live-badge">Live</span>
+        </div>
+        <div className="ws-card-meta">Workspace ativo</div>
+      </div>
+      {isPlatformOwner && <i className="ti ti-chevron-down" style={{ fontSize: 14 }} />}
+      {open && isPlatformOwner && (
+        <div className="dropdown-panel ws-panel" style={{ left: 0, right: 0, top: 'calc(100% + 6px)' }} onMouseLeave={() => setOpen(false)}>
+          <div className="dropdown-head"><span>Workspaces</span><span className="badge bg-light-primary text-primary">{workspaces.length}</span></div>
+          <div className="ws-panel-list app-scroll">
+            {workspaces.map((w) => (
+              <button
+                key={w.id}
+                className={`dropdown-link ${w.id === workspace?.id ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setOpen(false); if (w.id !== workspace?.id) switchWorkspace(w.id); }}
+              >
+                <i className={w.id === workspace?.id ? 'ti ti-circle-check-filled' : 'ti ti-circle'} />
+                <span className="ws-panel-name">{w.name}</span>
+              </button>
+            ))}
+          </div>
+          <div className="dropdown-divider" />
+          <button className="dropdown-link" onClick={(e) => { e.stopPropagation(); navigate('/admin/workspaces'); setOpen(false); }}>
+            <i className="ti ti-settings" /> Gerenciar workspaces
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: { collapsed: boolean; mobileOpen: boolean; onCloseMobile: () => void }) {
   const { company, user } = useAuth();
   const { can, theme, workspace } = useWorkspace();
@@ -167,6 +220,8 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: { coll
             </div>
           )}
         </div>
+        <WorkspaceCard collapsed={collapsed} />
+        <div className="sidebar-divider" />
         <nav className="sidebar-nav app-scroll">
           {groups.map((group) => (
             <div key={group.title} className={`nav-group ${group.adminOnly ? 'nav-group-admin' : ''}`}>
@@ -177,6 +232,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: { coll
             </div>
           ))}
         </nav>
+        {!collapsed && <div className="sidebar-ds-signature">Proofline · design system</div>}
       </aside>
     </>
   );
