@@ -177,7 +177,6 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: { coll
             </div>
           ))}
         </nav>
-        {!collapsed &&}
       </aside>
     </>
   );
